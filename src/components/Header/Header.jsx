@@ -48,7 +48,7 @@ export default function Header() {
                       </NavLink>
                     </li>
                     <li>
-                      <NavLink href="#" className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600">
+                      <NavLink href="#" className="block px-4 py-2  text-white hover:bg-gray-100 dark:hover:bg-gray-600">
                         Drones
                       </NavLink>
                     </li>
@@ -57,17 +57,17 @@ export default function Header() {
               )}
             </li>
             <li>
-              <NavLink to="/paper" className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
+              <NavLink to="/paper" className="block py-2  text-white px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
                Papers
               </NavLink>
             </li>
             <li>
-              <NavLink to="/pricing" className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
+              <NavLink to="/pricing" className="block py-2 text-white px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
                 About
               </NavLink>
             </li>
             <li>
-              <NavLink to="/contact" className="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
+              <NavLink to="/contact" className="block py-2 px-3 text-white text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:border-0 md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent">
                 Contact
               </NavLink>
             </li>

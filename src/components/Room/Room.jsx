@@ -20,7 +20,7 @@ const Room = () => {
   const { email: userEmail } = location.state || {};
 
   useEffect(() => {
-    socketRef.current = io('https://conbeckend.onrender.com');
+    socketRef.current = io('https://conbeckend.onrender.com/');
     const peer = new Peer();
     peerRef.current = peer;
 

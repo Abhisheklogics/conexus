@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import { auth } from '../../../firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 const provider = new GoogleAuthProvider();
-const socket = io('http://localhost:4000');
+const socket = io('https://conbeckend.onrender.com/');
 
 const LobbyRoom = () => {
     const [roomId, setRoomId] = useState('');

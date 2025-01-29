@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Peer from 'peerjs';
 import { io } from 'socket.io-client';
-import { useParams ,useLocation} from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { FaMicrophone, FaMicrophoneAltSlash, FaVideo, FaVideoSlash, FaDesktop, FaPhoneSlash } from 'react-icons/fa';
 
 const Room = () => {
   const { roomId } = useParams();
- 
   const location = useLocation();
   const [streams, setStreams] = useState({});
   const [localStream, setLocalStream] = useState(null);
@@ -18,6 +17,7 @@ const Room = () => {
   const localStreamRef = useRef(null);
   const screenShareStreamRef = useRef(null);
   const { email: userEmail } = location.state || {};
+  const firstUserRef = useRef(null); // Track the first user
 
   useEffect(() => {
     socketRef.current = io('https://conbeckend.onrender.com/');
@@ -29,8 +29,13 @@ const Room = () => {
       setLocalStream(stream);
 
       peer.on('open', (id) => {
-        socketRef.current.emit('join-room', { roomId, peerId: id ,email:userEmail});
+        socketRef.current.emit('join-room', { roomId, peerId: id, email: userEmail });
         setStreams((prev) => ({ ...prev, [id]: { stream } }));
+
+        // Mark the first user
+        if (!firstUserRef.current) {
+          firstUserRef.current = id; // Store the first user's peerId
+        }
       });
 
       peer.on('call', (call) => {
@@ -84,30 +89,47 @@ const Room = () => {
 
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
-      screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current.getVideoTracks()[0].enabled = true;
-      setStreams((prev) => ({
-        ...prev,
-        [peerRef.current.id]: { stream: localStreamRef.current },
-      }));
+      // Stop the screen share stream
+      if (screenShareStreamRef.current) {
+        screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      // Restore the local stream video if it exists
+      if (localStreamRef.current) {
+        const videoTrack = localStreamRef.current.getVideoTracks()[0];
+        if (videoTrack) videoTrack.enabled = true;  // Make sure the video track exists before enabling
+        setStreams((prev) => ({
+          ...prev,
+          [peerRef.current.id]: { stream: localStreamRef.current },
+        }));
+      }
       setIsScreenSharing(false);
       socketRef.current.emit('screen-share-stopped', { roomId, peerId: peerRef.current.id });
     } else {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenShareStreamRef.current = screenStream;
-        localStreamRef.current.getVideoTracks().forEach((track) => track.stop());
+  
+        // Stop the local video track if it's active
+        if (localStreamRef.current) {
+          const localVideoTracks = localStreamRef.current.getVideoTracks();
+          if (localVideoTracks.length > 0) {
+            localVideoTracks.forEach((track) => track.stop());  // Stop each track
+          }
+        }
+  
         setStreams((prev) => ({
           ...prev,
           [peerRef.current.id]: { stream: screenStream },
         }));
         setIsScreenSharing(true);
-        socketRef.current.emit('screen-share-started', { roomId, peerId: peerRef.current.id });
+        socketRef.current.emit('screen-share-started', { roomId, peerId: peerRef.current.id, stream: screenStream });
       } catch (err) {
         console.error('Error sharing screen:', err);
       }
     }
   };
+  
+  
 
   const leaveRoom = () => {
     socketRef.current.emit('leave-room', { roomId, peerId: peerRef.current.id });
@@ -140,17 +162,32 @@ const Room = () => {
         <div className="grid grid-cols-5 gap-4">
           {Object.entries(streams).map(([id, { stream }]) => (
             <div key={id} className="relative border border-gray-700 rounded-lg overflow-hidden">
-              <video
-                playsInline
-                autoPlay
-                muted={id === peerRef.current.id}
-                ref={(video) => {
-                  if (video && stream) {
-                    video.srcObject = stream;
-                  }
-                }}
-                className="w-full h-full object-cover"
-              />
+              {id == firstUserRef.current ? ( // Check if it's the first user
+                <video
+                  playsInline
+                  autoPlay
+                  controls
+                  muted={id === peerRef.current.id} 
+                  ref={(video) => {
+                    if (video && stream) {
+                      video.srcObject = stream;
+                    }
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <video
+                  playsInline
+                  autoPlay
+                  muted={id === peerRef.current.id} 
+                  ref={(video) => {
+                    if (video && stream) {
+                      video.srcObject = stream;
+                    }
+                  }}
+                  className="w-full h-full object-cover"
+                />
+              )}
               <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
                 {id === peerRef.current.id ? 'You' : id}
               </p>

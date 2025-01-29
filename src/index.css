@@ -1,0 +1,70 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS for the container */
+.room-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  /* Adjust video grid layout based on screen size */
+  .room-container .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  /* Styles for the individual video elements */
+  .room-container .video-container {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .room-container .video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .room-container .video-container .video-overlay {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 5px;
+    font-size: 12px;
+    border-radius: 5px;
+  }
+  
+  /* Header styles for the room controls */
+  .room-container .nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px;
+    background-color: #222;
+  }
+  
+  /* Floating Action Button styles */
+  .room-container .fab {
+    position: fixed;
+    bottom: 10%;
+    right: 10%;
+    background-color: #007bff;
+    padding: 15px;
+    border-radius: 50%;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Add hover effect for buttons */
+  .room-container button:hover {
+    background-color: #555;
+    transition: background-color 0.3s ease;
+  }
+  

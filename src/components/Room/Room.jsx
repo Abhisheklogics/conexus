@@ -171,11 +171,12 @@ const toggleScreenShare = async () => {
     </div>
   ) : null}
 
-  <div className={grid ${isScreenSharing ? 'grid-cols-1' : 'grid-cols-4'} gap-4}>
+  <div className={`grid ${isScreenSharing ? 'grid-cols-1' : 'grid-cols-4'} gap-4`}>
+
     {Object.entries(streams).map(([id, { stream }]) => (
       <div
         key={id}
-        className={relative ${
+        className={'relative' ${
           isScreenSharing
             ? 'w-[800px] h-[500px]' // Large screen for all during sharing
             : 'w-48 h-36'
@@ -194,7 +195,7 @@ const toggleScreenShare = async () => {
     ))}
   </div>
 
-  {/* Mini thumbnails for all users when screen sharing */}
+ 
   {isScreenSharing && (
     <div className="absolute bottom-4 left-4 flex space-x-2">
       {Object.entries(streams).map(([id, { stream }]) => (

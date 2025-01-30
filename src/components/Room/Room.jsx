@@ -158,7 +158,7 @@ const Room = () => {
             <video
               playsInline
               autoPlay
-              className="w-[90%] h-[90%]"
+              className="w-full h-full"
               ref={(video) => {
                 if (video && streams[peerRef.current.id]) {
                   video.srcObject = streams[peerRef.current.id].stream;
@@ -170,20 +170,8 @@ const Room = () => {
           <div className="grid grid-cols-5 gap-4">
             {Object.entries(streams).map(([id, { stream }]) => (
               <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
-                <video
-                  playsInline
-                  autoPlay
-                  className="w-full h-full"
-                  muted={id === peerRef.current.id}
-                  ref={(video) => {
-                    if (video && stream) {
-                      video.srcObject = stream;
-                    }
-                  }}
-                />
-                <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
-                  {id === peerRef.current.id ? 'You' : id}
-                </p>
+               
+                {id}
               </div>
             ))}
           </div>

@@ -153,7 +153,7 @@ const Room = () => {
       <div className="flex-grow p-8">
         <div className="grid grid-cols-5 gap-4">
           {Object.entries(streams).map(([id, { stream }]) => (
-            <div key={id} className="relative w-[500px] h-[400px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
+            <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
               {id == firstUserRef.current ? ( // Check if it's the first user
                 <video
                   playsInline
@@ -165,7 +165,7 @@ const Room = () => {
                       video.srcObject = stream;
                     }
                   }}
-                 
+                 className='w-[700px] h-[600px]'
                 />
               ) : (
                <video

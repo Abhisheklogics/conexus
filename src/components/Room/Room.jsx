@@ -165,14 +165,25 @@ const Room = () => {
                       video.srcObject = stream;
                     }
                   }}
-                  className="w-fit h-fit"
+                 
                 />
               ) : (
-                <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
+               <video
+                  playsInline
+                  autoPlay
+                  className="w-fit h-fit"
+                  muted={id === peerRef.current.id} 
+                  ref={(video) => {
+                    if (video && stream) {
+                      video.srcObject = stream;
+                    }
+                  }}
+                 
+                />
+              )}
+              <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
                 {id === peerRef.current.id ? 'You' : id}
               </p>
-              )}
-             
             </div>
           ))}
         </div>

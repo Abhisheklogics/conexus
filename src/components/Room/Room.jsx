@@ -154,8 +154,7 @@ const toggleScreenShare = async () => {
           </button>
         </div>
       </nav>
-
-      <div className="flex-grow p-8 flex flex-col">
+<div className="flex-grow p-8 flex flex-col">
   {isScreenSharing && streams[peerRef.current.id] ? (
     <div className="w-full h-[70vh] flex justify-center items-center bg-black mb-4">
       <video
@@ -191,10 +190,7 @@ const toggleScreenShare = async () => {
     ))}
   </div>
 </div>
-
-</div>
-
-    </div>
+  </div>
   );
 };
 

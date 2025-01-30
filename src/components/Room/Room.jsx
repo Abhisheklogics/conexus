@@ -156,7 +156,7 @@ const toggleScreenShare = async () => {
       </nav>
 <div className="flex-grow p-8 flex flex-col">
   {isScreenSharing && streams[peerRef.current.id] ? (
-    <div className="w-full h-[70vh] flex justify-center items-center bg-black mb-4">
+    <div className="w-full h-[80vh] flex justify-center items-center bg-black mb-4">
       <video
         playsInline
         autoPlay
@@ -171,11 +171,15 @@ const toggleScreenShare = async () => {
     </div>
   ) : null}
 
-  <div className={`grid ${isScreenSharing ? 'grid-cols-5' : 'grid-cols-4'} gap-4`}>
+  <div className={`grid ${isScreenSharing ? 'grid-cols-1' : 'grid-cols-4'} gap-4`}>
     {Object.entries(streams).map(([id, { stream }]) => (
       <div
         key={id}
-        className={`relative ${id === peerRef.current.id && isScreenSharing ? 'w-[600px] h-[400px]' : 'w-48 h-36'} border border-gray-700 rounded-lg overflow-hidden bg-black`}
+        className={`relative ${
+          isScreenSharing
+            ? 'w-[800px] h-[500px]' // Large screen for all during sharing
+            : 'w-48 h-36'
+        } border border-gray-700 rounded-lg overflow-hidden bg-black`}
       >
         <video
           playsInline
@@ -189,6 +193,24 @@ const toggleScreenShare = async () => {
       </div>
     ))}
   </div>
+
+  {/* Mini thumbnails for all users when screen sharing */}
+  {isScreenSharing && (
+    <div className="absolute bottom-4 left-4 flex space-x-2">
+      {Object.entries(streams).map(([id, { stream }]) => (
+        <div key={id} className="w-10 h-10 border border-gray-500 rounded-lg overflow-hidden">
+          <video
+            playsInline
+            autoPlay
+            className="w-full h-full object-cover"
+            ref={(video) => {
+              if (video) video.srcObject = stream;
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  )}
 </div>
   </div>
   );

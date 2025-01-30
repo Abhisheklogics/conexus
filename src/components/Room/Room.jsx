@@ -82,43 +82,42 @@ const Room = () => {
     setIsVideoOff(!videoTrack.enabled);
   };
 
- const toggleScreenShare = async () => {
+const toggleScreenShare = async () => {
   if (isScreenSharing) {
     // Stop screen sharing
     if (screenShareStreamRef.current) {
       screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
     }
 
-    // Restore previous video streams for all users
+    // Restore the local camera stream
+    Object.values(peerRef.current.connections).forEach((connections) => {
+      connections.forEach((connection) => {
+        const sender = connection.peerConnection.getSenders().find(s => s.track.kind === 'video');
+        if (sender) sender.replaceTrack(localStreamRef.current.getVideoTracks()[0]);
+      });
+    });
+
     setStreams(savedStreamsRef.current);
     savedStreamsRef.current = {};
-
     setIsScreenSharing(false);
   } else {
     try {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-
       screenShareStreamRef.current = screenStream;
 
-      // Save current video streams before replacing them
+      // Save the current video streams
       savedStreamsRef.current = { ...streams };
 
-      // Replace streams with only the screen share stream
-      setStreams({
-        [peerRef.current.id]: { stream: screenStream }
-      });
-
-      // Notify all peers that screen sharing has started
+      // Replace the user's video stream with screen share stream
       Object.values(peerRef.current.connections).forEach((connections) => {
         connections.forEach((connection) => {
-          const call = peerRef.current.call(connection.peer, screenStream);
-          call.on('stream', (remoteStream) => {
-            setStreams((prev) => ({
-              ...prev,
-              [connection.peer]: { stream: remoteStream }, // Send to all users
-            }));
-          });
+          const sender = connection.peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
         });
+      });
+
+      setStreams({
+        [peerRef.current.id]: { stream: screenStream }
       });
 
       setIsScreenSharing(true);

@@ -108,11 +108,15 @@ const Room = () => {
         [peerRef.current.id]: { stream: screenStream }
       });
 
-      Object.values(peerRef.current.connections).forEach((connection) => {
-        const call = peerRef.current.call(connection[0].peer, screenStream);
-        call.on('stream', (remoteStream) => {
-          setStreams({
-            [connection[0].peer]: { stream: remoteStream }  // Show only screen share
+      // Notify all peers that screen sharing has started
+      Object.values(peerRef.current.connections).forEach((connections) => {
+        connections.forEach((connection) => {
+          const call = peerRef.current.call(connection.peer, screenStream);
+          call.on('stream', (remoteStream) => {
+            setStreams((prev) => ({
+              ...prev,
+              [connection.peer]: { stream: remoteStream }, // Send to all users
+            }));
           });
         });
       });

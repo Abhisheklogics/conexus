@@ -175,7 +175,7 @@ const toggleScreenShare = async () => {
     {Object.entries(streams).map(([id, { stream }]) => (
       <div
         key={id}
-        className={`relative ${id === peerRef.current.id && isScreenSharing ? 'hidden' : 'w-48 h-36'} border border-gray-700 rounded-lg overflow-hidden bg-black`}
+        className={`relative ${id === peerRef.current.id && isScreenSharing ? 'w-[600px] h-[400px]' : 'w-48 h-36'} border border-gray-700 rounded-lg overflow-hidden bg-black`}
       >
         <video
           playsInline

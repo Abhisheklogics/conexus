@@ -166,14 +166,14 @@ const Room = () => {
                 <video
                   playsInline
                   autoPlay
-                  controls
+                 
                   muted={id === peerRef.current.id} 
                   ref={(video) => {
                     if (video && stream) {
                       video.srcObject = stream;
                     }
                   }}
-                  className="w-full h-full object-cover"
+                  className="w-[500px] h-[400px]"
                 />
               ) : (
                 <video

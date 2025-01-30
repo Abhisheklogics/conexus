@@ -150,44 +150,45 @@ const Room = () => {
           </button>
         </div>
       </nav>
-      <div className="flex-grow p-8">
-        <div className="grid grid-cols-5 gap-4">
-          {Object.entries(streams).map(([id, { stream }]) => (
-            <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
-              {id == firstUserRef.current ? ( // Check if it's the first user
-                <video
-                  playsInline
-                  autoPlay
-                 
-                  muted={id === peerRef.current.id} 
-                  ref={(video) => {
-                    if (video && stream) {
-                      video.srcObject = stream;
+     <div className="flex-grow p-8">
+    {isScreenSharing ? (
+        // Show only screen share in full size
+        <div className="w-full h-full flex justify-center items-center bg-black">
+            <video
+                playsInline
+                autoPlay
+                className="w-[90%] h-[90%]"
+                ref={(video) => {
+                    if (video && streams[peerRef.current.id]) {
+                        video.srcObject = streams[peerRef.current.id].stream;
                     }
-                  }}
-                 className='w-[700px] h-[600px]'
-                />
-              ) : (
-               <video
-                  playsInline
-                  autoPlay
-                  className="w-fit h-fit"
-                  muted={id === peerRef.current.id} 
-                  ref={(video) => {
-                    if (video && stream) {
-                      video.srcObject = stream;
-                    }
-                  }}
-                 
-                />
-              )}
-              <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
-                {id === peerRef.current.id ? 'You' : id}
-              </p>
-            </div>
-          ))}
+                }}
+            />
         </div>
-      </div>
+    ) : (
+        // Show all participants' videos
+        <div className="grid grid-cols-5 gap-4">
+            {Object.entries(streams).map(([id, { stream }]) => (
+                <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
+                    <video
+                        playsInline
+                        autoPlay
+                        className="w-full h-full"
+                        muted={id === peerRef.current.id}
+                        ref={(video) => {
+                            if (video && stream) {
+                                video.srcObject = stream;
+                            }
+                        }}
+                    />
+                    <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
+                        {id === peerRef.current.id ? 'You' : id}
+                    </p>
+                </div>
+            ))}
+        </div>
+    )}
+</div>
     </div>
   );
 };

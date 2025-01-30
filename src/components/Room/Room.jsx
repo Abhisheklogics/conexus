@@ -87,49 +87,41 @@ const Room = () => {
     setIsVideoOff(!videoTrack.enabled);
   };
 
-  const toggleScreenShare = async () => {
+ const toggleScreenShare = async () => {
     if (isScreenSharing) {
-      // Stop the screen share stream
-      if (screenShareStreamRef.current) {
-        screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
-      }
-      // Restore the local stream video if it exists
-      if (localStreamRef.current) {
-        const videoTrack = localStreamRef.current.getVideoTracks()[0];
-        if (videoTrack) videoTrack.enabled = true;  // Make sure the video track exists before enabling
-        setStreams((prev) => ({
-          ...prev,
-          [peerRef.current.id]: { stream: localStreamRef.current },
-        }));
-      }
-      setIsScreenSharing(false);
-      socketRef.current.emit('screen-share-stopped', { roomId, peerId: peerRef.current.id });
-    } else {
-      try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenShareStreamRef.current = screenStream;
-  
-        // Stop the local video track if it's active
-        if (localStreamRef.current) {
-          const localVideoTracks = localStreamRef.current.getVideoTracks();
-          if (localVideoTracks.length > 0) {
-            localVideoTracks.forEach((track) => track.stop());  // Stop each track
-          }
+        if (screenShareStreamRef.current) {
+            screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
         }
-  
-        setStreams((prev) => ({
-          ...prev,
-          [peerRef.current.id]: { stream: screenStream },
-        }));
-        setIsScreenSharing(true);
-        socketRef.current.emit('screen-share-started', { roomId, peerId: peerRef.current.id, stream: screenStream });
-      } catch (err) {
-        console.error('Error sharing screen:', err);
-      }
+
+        // Switch back to webcam stream
+        Object.values(peerRef.current.connections).forEach((connection) => {
+            const call = peerRef.current.call(connection[0].peer, localStreamRef.current);
+            call.on('stream', (remoteStream) => {
+                setStreams((prev) => ({ ...prev, [connection[0].peer]: { stream: remoteStream } }));
+            });
+        });
+
+        setIsScreenSharing(false);
+    } else {
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+
+            screenShareStreamRef.current = screenStream;
+
+            // Send screen stream to all peers
+            Object.values(peerRef.current.connections).forEach((connection) => {
+                const call = peerRef.current.call(connection[0].peer, screenStream);
+                call.on('stream', (remoteStream) => {
+                    setStreams((prev) => ({ ...prev, [connection[0].peer]: { stream: remoteStream } }));
+                });
+            });
+
+            setIsScreenSharing(true);
+        } catch (err) {
+            console.error('Error sharing screen:', err);
+        }
     }
-  };
-  
-  
+};
 
   const leaveRoom = () => {
     socketRef.current.emit('leave-room', { roomId, peerId: peerRef.current.id });

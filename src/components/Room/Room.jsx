@@ -84,12 +84,10 @@ const Room = () => {
 
 const toggleScreenShare = async () => {
   if (isScreenSharing) {
-    // Stop screen sharing
     if (screenShareStreamRef.current) {
       screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
     }
 
-    // Restore the local camera stream
     Object.values(peerRef.current.connections).forEach((connections) => {
       connections.forEach((connection) => {
         const sender = connection.peerConnection.getSenders().find(s => s.track.kind === 'video');
@@ -105,10 +103,8 @@ const toggleScreenShare = async () => {
       const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       screenShareStreamRef.current = screenStream;
 
-      // Save the current video streams
       savedStreamsRef.current = { ...streams };
 
-      // Replace the user's video stream with screen share stream
       Object.values(peerRef.current.connections).forEach((connections) => {
         connections.forEach((connection) => {
           const sender = connection.peerConnection.getSenders().find(s => s.track.kind === 'video');
@@ -116,9 +112,10 @@ const toggleScreenShare = async () => {
         });
       });
 
-      setStreams({
-        [peerRef.current.id]: { stream: screenStream }
-      });
+      setStreams((prev) => ({
+        ...prev,
+        screenShare: { stream: screenStream }
+      }));
 
       setIsScreenSharing(true);
     } catch (err) {
@@ -154,65 +151,18 @@ const toggleScreenShare = async () => {
           </button>
         </div>
       </nav>
-<div className="flex-grow p-8 flex flex-col">
-  {isScreenSharing && streams[peerRef.current.id] ? (
-    <div className="w-full h-[80vh] flex justify-center items-center bg-black mb-4">
-      <video
-        playsInline
-        autoPlay
-        className="w-full h-full object-contain"
-        ref={(video) => {
-          if (video && streams[peerRef.current.id]) {
-            video.srcObject = streams[peerRef.current.id].stream;
-          }
-        }}
-      />
-      <p className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded">You are sharing</p>
-    </div>
-  ) : null}
-
-  <div className={`grid ${isScreenSharing ? 'grid-cols-1' : 'grid-cols-4'} gap-4`}>
-    {Object.entries(streams).map(([id, { stream }]) => (
-      <div
-        key={id}
-        className={`relative ${
-          isScreenSharing
-            ? 'w-[800px] h-[500px]' // Large screen for all during sharing
-            : 'w-48 h-36'
-        } border border-gray-700 rounded-lg overflow-hidden bg-black`}
-      >
-        <video
-          playsInline
-          autoPlay
-          className="w-full h-full object-cover"
-          ref={(video) => {
-            if (video) video.srcObject = stream;
-          }}
-        />
-        <p className="absolute bottom-2 left-2 bg-gray-800 text-white px-2 py-1 rounded">{id}</p>
+      <div className="flex-grow p-8 flex flex-col items-center">
+        {isScreenSharing && streams.screenShare ? (
+          <div className="w-full h-[80vh] flex justify-center items-center bg-black mb-4">
+            <video playsInline autoPlay className="w-full h-full object-contain" ref={(video) => {
+              if (video && streams.screenShare) {
+                video.srcObject = streams.screenShare.stream;
+              }
+            }} />
+          </div>
+        ) : null}
       </div>
-    ))}
-  </div>
-
-  {/* Mini thumbnails for all users when screen sharing */}
-  {isScreenSharing && (
-    <div className="absolute bottom-4 left-4 flex space-x-2">
-      {Object.entries(streams).map(([id, { stream }]) => (
-        <div key={id} className="w-10 h-10 border border-gray-500 rounded-lg overflow-hidden">
-          <video
-            playsInline
-            autoPlay
-            className="w-full h-full object-cover"
-            ref={(video) => {
-              if (video) video.srcObject = stream;
-            }}
-          />
-        </div>
-      ))}
     </div>
-  )}
-</div>
-  </div>
   );
 };
 

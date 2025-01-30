@@ -16,9 +16,9 @@ const Room = () => {
   const socketRef = useRef(null);
   const localStreamRef = useRef(null);
   const screenShareStreamRef = useRef(null);
+  const savedStreamsRef = useRef({});
   const { email: userEmail } = location.state || {};
-  const firstUserRef = useRef(null); // Track the first user
-
+  
   useEffect(() => {
     socketRef.current = io('https://conbeckend.onrender.com/');
     const peer = new Peer();
@@ -31,11 +31,6 @@ const Room = () => {
       peer.on('open', (id) => {
         socketRef.current.emit('join-room', { roomId, peerId: id, email: userEmail });
         setStreams((prev) => ({ ...prev, [id]: { stream } }));
-
-        // Mark the first user
-        if (!firstUserRef.current) {
-          firstUserRef.current = id; // Store the first user's peerId
-        }
       });
 
       peer.on('call', (call) => {
@@ -87,41 +82,45 @@ const Room = () => {
     setIsVideoOff(!videoTrack.enabled);
   };
 
- const toggleScreenShare = async () => {
+  const toggleScreenShare = async () => {
     if (isScreenSharing) {
-        if (screenShareStreamRef.current) {
-            screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
-        }
+      // Stop screen sharing
+      if (screenShareStreamRef.current) {
+        screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
 
-        // Switch back to webcam stream
-        Object.values(peerRef.current.connections).forEach((connection) => {
-            const call = peerRef.current.call(connection[0].peer, localStreamRef.current);
-            call.on('stream', (remoteStream) => {
-                setStreams((prev) => ({ ...prev, [connection[0].peer]: { stream: remoteStream } }));
-            });
+      // Restore all previous video streams
+      setStreams(savedStreamsRef.current);
+      savedStreamsRef.current = {};
+
+      setIsScreenSharing(false);
+    } else {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+
+        screenShareStreamRef.current = screenStream;
+
+        // Save current video streams before replacing them
+        savedStreamsRef.current = { ...streams };
+
+        // Replace all streams with the screen share stream
+        setStreams({
+          [peerRef.current.id]: { stream: screenStream }
         });
 
-        setIsScreenSharing(false);
-    } else {
-        try {
-            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        Object.values(peerRef.current.connections).forEach((connection) => {
+          const call = peerRef.current.call(connection[0].peer, screenStream);
+          call.on('stream', (remoteStream) => {
+            setStreams((prev) => ({ ...prev, [connection[0].peer]: { stream: remoteStream } }));
+          });
+        });
 
-            screenShareStreamRef.current = screenStream;
-
-            // Send screen stream to all peers
-            Object.values(peerRef.current.connections).forEach((connection) => {
-                const call = peerRef.current.call(connection[0].peer, screenStream);
-                call.on('stream', (remoteStream) => {
-                    setStreams((prev) => ({ ...prev, [connection[0].peer]: { stream: remoteStream } }));
-                });
-            });
-
-            setIsScreenSharing(true);
-        } catch (err) {
-            console.error('Error sharing screen:', err);
-        }
+        setIsScreenSharing(true);
+      } catch (err) {
+        console.error('Error sharing screen:', err);
+      }
     }
-};
+  };
 
   const leaveRoom = () => {
     socketRef.current.emit('leave-room', { roomId, peerId: peerRef.current.id });
@@ -150,45 +149,44 @@ const Room = () => {
           </button>
         </div>
       </nav>
-     <div className="flex-grow p-8">
-    {isScreenSharing ? (
-        // Show only screen share in full size
-        <div className="w-full h-full flex justify-center items-center bg-black">
+
+      <div className="flex-grow p-8">
+        {isScreenSharing ? (
+          <div className="w-full h-full flex justify-center items-center bg-black">
             <video
-                playsInline
-                autoPlay
-                className="w-[90%] h-[90%]"
-                ref={(video) => {
-                    if (video && streams[peerRef.current.id]) {
-                        video.srcObject = streams[peerRef.current.id].stream;
-                    }
-                }}
+              playsInline
+              autoPlay
+              className="w-[90%] h-[90%]"
+              ref={(video) => {
+                if (video && streams[peerRef.current.id]) {
+                  video.srcObject = streams[peerRef.current.id].stream;
+                }
+              }}
             />
-        </div>
-    ) : (
-        // Show all participants' videos
-        <div className="grid grid-cols-5 gap-4">
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-4">
             {Object.entries(streams).map(([id, { stream }]) => (
-                <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
-                    <video
-                        playsInline
-                        autoPlay
-                        className="w-full h-full"
-                        muted={id === peerRef.current.id}
-                        ref={(video) => {
-                            if (video && stream) {
-                                video.srcObject = stream;
-                            }
-                        }}
-                    />
-                    <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
-                        {id === peerRef.current.id ? 'You' : id}
-                    </p>
-                </div>
+              <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
+                <video
+                  playsInline
+                  autoPlay
+                  className="w-full h-full"
+                  muted={id === peerRef.current.id}
+                  ref={(video) => {
+                    if (video && stream) {
+                      video.srcObject = stream;
+                    }
+                  }}
+                />
+                <p className="absolute bottom-1 left-1 bg-black bg-opacity-75 text-xs px-2 py-1 rounded">
+                  {id === peerRef.current.id ? 'You' : id}
+                </p>
+              </div>
             ))}
-        </div>
-    )}
-</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

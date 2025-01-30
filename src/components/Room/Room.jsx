@@ -168,11 +168,16 @@ const toggleScreenShare = async () => {
           }
         }}
       />
+      <p className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded">You are sharing</p>
     </div>
   ) : null}
-  <div className="grid grid-cols-4 gap-4">
+
+  <div className={`grid ${isScreenSharing ? 'grid-cols-5' : 'grid-cols-4'} gap-4`}>
     {Object.entries(streams).map(([id, { stream }]) => (
-      <div key={id} className="relative w-48 h-36 border border-gray-700 rounded-lg overflow-hidden bg-black">
+      <div
+        key={id}
+        className={`relative ${id === peerRef.current.id && isScreenSharing ? 'hidden' : 'w-48 h-36'} border border-gray-700 rounded-lg overflow-hidden bg-black`}
+      >
         <video
           playsInline
           autoPlay
@@ -181,9 +186,12 @@ const toggleScreenShare = async () => {
             if (video) video.srcObject = stream;
           }}
         />
+        <p className="absolute bottom-2 left-2 bg-gray-800 text-white px-2 py-1 rounded">{id}</p>
       </div>
     ))}
   </div>
+</div>
+
 </div>
 
     </div>

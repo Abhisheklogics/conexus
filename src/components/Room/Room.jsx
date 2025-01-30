@@ -155,31 +155,37 @@ const toggleScreenShare = async () => {
         </div>
       </nav>
 
-      <div className="flex-grow p-8">
-        {isScreenSharing ? (
-          <div className="w-full h-full flex justify-center items-center bg-black">
-            <video
-              playsInline
-              autoPlay
-              className="w-full h-full"
-              ref={(video) => {
-                if (video && streams[peerRef.current.id]) {
-                  video.srcObject = streams[peerRef.current.id].stream;
-                }
-              }}
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-5 gap-4">
-            {Object.entries(streams).map(([id, { stream }]) => (
-              <div key={id} className="relative w-[700px] h-[600px] ml-10 border border-gray-700 rounded-lg overflow-hidden">
-               
-                {id}
-              </div>
-            ))}
-          </div>
-        )}
+      <div className="flex-grow p-8 flex flex-col">
+  {isScreenSharing && streams[peerRef.current.id] ? (
+    <div className="w-full h-[70vh] flex justify-center items-center bg-black mb-4">
+      <video
+        playsInline
+        autoPlay
+        className="w-full h-full object-contain"
+        ref={(video) => {
+          if (video && streams[peerRef.current.id]) {
+            video.srcObject = streams[peerRef.current.id].stream;
+          }
+        }}
+      />
+    </div>
+  ) : null}
+  <div className="grid grid-cols-4 gap-4">
+    {Object.entries(streams).map(([id, { stream }]) => (
+      <div key={id} className="relative w-48 h-36 border border-gray-700 rounded-lg overflow-hidden bg-black">
+        <video
+          playsInline
+          autoPlay
+          className="w-full h-full object-cover"
+          ref={(video) => {
+            if (video) video.srcObject = stream;
+          }}
+        />
       </div>
+    ))}
+  </div>
+</div>
+
     </div>
   );
 };

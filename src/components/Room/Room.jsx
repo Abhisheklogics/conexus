@@ -150,32 +150,16 @@ const Room = () => {
         </div>
       </nav>
 
-      <div className="flex-grow p-8 flex flex-col">
-        {isScreenSharing && streams[peerRef.current.id] ? (
-          <div className="w-full h-[80vh] flex justify-center items-center bg-black mb-4">
-            <video
-              playsInline
-              autoPlay
-              className="w-full h-full object-contain"
-              ref={(video) => {
-                if (video && streams[peerRef.current.id]) {
-                  video.srcObject = streams[peerRef.current.id].stream;
-                }
-              }}
-            />
-            <p className="absolute top-2 left-2 bg-gray-800 text-white px-2 py-1 rounded">You are sharing</p>
-          </div>
-        ) : null}
-
-        <div className={`grid ${isScreenSharing ? 'grid-cols-1' : 'grid-cols-4'} gap-4`}>
+        <div className={`flex grid gap-4`}>
           {Object.entries(streams).map(([id, { stream }]) => (
             <div
               key={id}
-              className={`relative ${isScreenSharing ? 'w-[800px] h-[500px]' : 'w-48 h-36'} border border-gray-700 rounded-lg overflow-hidden bg-black`}
+              className={` w-[200px] h-36 border border-gray-700 rounded-lg overflow-hidden bg-black`}
             >
               <video
                 playsInline
                 autoPlay
+                controls
                 className="w-full h-full object-cover"
                 ref={(video) => {
                   if (video) video.srcObject = stream;
@@ -186,23 +170,7 @@ const Room = () => {
           ))}
         </div>
 
-        {isScreenSharing && (
-          <div className="absolute bottom-4 left-4 flex space-x-2">
-            {Object.entries(streams).map(([id, { stream }]) => (
-              <div key={id} className="w-10 h-10 border border-gray-500 rounded-lg overflow-hidden">
-                <video
-                  playsInline
-                  autoPlay
-                  className="w-full h-full object-cover"
-                  ref={(video) => {
-                    if (video) video.srcObject = stream;
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      
     </div>
   );
 };

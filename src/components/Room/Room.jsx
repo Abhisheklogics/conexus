@@ -108,21 +108,21 @@ const Room = () => {
         </ul>
       </div>
 
-      <div className="flex justify-center items-center  md:w-[800px] md:h-[600px]">
-        {screenStream ? (
-          <video
-            playsInline
-            autoPlay
-            controls
-            className="w-full md:ml:[500px] h-full object-cover"
-            ref={(video) => {
-              if (video) video.srcObject = screenStream;
-            }}
-          />
-        ) : (
-          <p className="text-xl">No screen sharing active</p>
-        )}
-      </div>
+     <div className="flex justify-center items-center min-h-screen">
+  {screenStream ? (
+    <video
+      playsInline
+      autoPlay
+      controls
+      className="w-[800px] h-[600px] object-cover mx-auto"
+      ref={(video) => {
+        if (video) video.srcObject = screenStream;
+      }}
+    />
+  ) : (
+    <p className="text-xl">No screen sharing active</p>
+  )}
+</div>
     </div>
   );
 };

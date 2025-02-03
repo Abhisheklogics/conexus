@@ -1,41 +1,42 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Peer from 'peerjs';
-import { io } from 'socket.io-client';
-import { useParams } from 'react-router-dom';
-import { FaDesktop, FaPhoneSlash } from 'react-icons/fa';
+import React, { useEffect, useRef, useState } from "react";
+import Peer from "peerjs";
+import { io } from "socket.io-client";
+import { useParams, useLocation } from "react-router-dom";
+import { FaDesktop, FaPhoneSlash } from "react-icons/fa";
 
 const Room = () => {
   const { roomId } = useParams();
+  const location = useLocation();
+  const name = location.state?.name || "Guest";
   const [screenStream, setScreenStream] = useState(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [users, setUsers] = useState([]); // Store user emails
+  const [users, setUsers] = useState([]);
   const peerRef = useRef(null);
   const socketRef = useRef(null);
   const screenShareStreamRef = useRef(null);
   const currentScreenSharerRef = useRef(null);
 
   useEffect(() => {
-    socketRef.current = io('https://conbeckend.onrender.com/');
+    socketRef.current = io("https://conbeckend.onrender.com/");
     const peer = new Peer();
     peerRef.current = peer;
 
-    peer.on('open', (id) => {
-      const email = prompt("Enter your email:"); // User se email le rahe hain
-      socketRef.current.emit('join-room', { roomId, peerId: id, email });
+    peer.on("open", (id) => {
+      socketRef.current.emit("join-room", { roomId, peerId: id, name });
     });
 
-    peer.on('call', (call) => {
+    peer.on("call", (call) => {
       call.answer();
-      call.on('stream', (remoteStream) => {
-        setScreenStream(remoteStream); // Only show the shared screen
+      call.on("stream", (remoteStream) => {
+        setScreenStream(remoteStream);
       });
     });
 
-    socketRef.current.on('user-list', (userList) => {
+    socketRef.current.on("user-list", (userList) => {
       setUsers(userList);
     });
 
-    socketRef.current.on('screen-share-update', ({ peerId, isSharing }) => {
+    socketRef.current.on("screen-share-update", ({ peerId, isSharing }) => {
       if (isSharing) {
         currentScreenSharerRef.current = peerId;
       } else {
@@ -45,7 +46,7 @@ const Room = () => {
     });
 
     return () => {
-      socketRef.current.emit('leave-room', { roomId, peerId: peerRef.current.id });
+      socketRef.current.emit("leave-room", { roomId, peerId: peerRef.current.id });
       socketRef.current.disconnect();
       peerRef.current.destroy();
     };
@@ -55,33 +56,33 @@ const Room = () => {
     if (isScreenSharing) {
       screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
       setIsScreenSharing(false);
-      socketRef.current.emit('screen-share-stopped', { roomId, peerId: peerRef.current.id });
+      socketRef.current.emit("screen-share-stopped", { roomId, peerId: peerRef.current.id });
     } else {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenShareStreamRef.current = screenStream;
-        setScreenStream(screenStream); // Jo share kar raha hai, usko bhi screen dikhe
+        setScreenStream(screenStream);
         setIsScreenSharing(true);
-        socketRef.current.emit('screen-share-started', { roomId, peerId: peerRef.current.id });
+        socketRef.current.emit("screen-share-started", { roomId, peerId: peerRef.current.id });
 
         Object.values(peerRef.current.connections).forEach((connections) => {
           connections.forEach((connection) => {
-            const sender = connection.peerConnection.getSenders().find(s => s.track.kind === 'video');
+            const sender = connection.peerConnection.getSenders().find(s => s.track.kind === "video");
             if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
           });
         });
 
       } catch (err) {
-        console.error('Error sharing screen:', err);
+        console.error("Error sharing screen:", err);
       }
     }
   };
 
   const leaveRoom = () => {
-    socketRef.current.emit('leave-room', { roomId, peerId: peerRef.current.id });
+    socketRef.current.emit("leave-room", { roomId, peerId: peerRef.current.id });
     socketRef.current.disconnect();
     peerRef.current.destroy();
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   return (
@@ -89,7 +90,7 @@ const Room = () => {
       <nav className="bg-gray-800 p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">Room Code: {roomId}</h1>
         <div className="flex space-x-4">
-          <button onClick={toggleScreenShare} className={`p-2 rounded-lg ${isScreenSharing ? 'bg-red-500' : 'bg-blue-500'}`}>
+          <button onClick={toggleScreenShare} className={`p-2 rounded-lg ${isScreenSharing ? "bg-red-500" : "bg-blue-500"}`}>
             <FaDesktop className="text-white" />
           </button>
           <button onClick={leaveRoom} className="p-2 bg-red-500 rounded-lg">
@@ -102,7 +103,7 @@ const Room = () => {
         <h2 className="text-lg font-semibold">Users in Room:</h2>
         <ul>
           {users.map((user, index) => (
-            <li key={index} className="text-sm">{user.email}</li>
+            <li key={index} className="text-sm">{user.name}</li>
           ))}
         </ul>
       </div>

@@ -103,7 +103,7 @@ const Room = () => {
         <h2 className="text-lg font-semibold">Users in Room:</h2>
         <ul>
           {users.map((user, index) => (
-            <li key={index} className="text-sm">{user.name}</li>
+            <li key={roomId} className="text-sm">{user.name}</li>
           ))}
         </ul>
       </div>

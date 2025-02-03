@@ -8,18 +8,20 @@ const Room = () => {
   const { roomId } = useParams();
   const [screenStream, setScreenStream] = useState(null);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [users, setUsers] = useState([]); // Store user emails
   const peerRef = useRef(null);
   const socketRef = useRef(null);
   const screenShareStreamRef = useRef(null);
-  const currentScreenSharerRef = useRef(null); // Track who is sharing
-  
+  const currentScreenSharerRef = useRef(null);
+
   useEffect(() => {
     socketRef.current = io('https://conbeckend.onrender.com/');
     const peer = new Peer();
     peerRef.current = peer;
 
     peer.on('open', (id) => {
-      socketRef.current.emit('join-room', { roomId, peerId: id });
+      const email = prompt("Enter your email:"); // User se email le rahe hain
+      socketRef.current.emit('join-room', { roomId, peerId: id, email });
     });
 
     peer.on('call', (call) => {
@@ -27,6 +29,10 @@ const Room = () => {
       call.on('stream', (remoteStream) => {
         setScreenStream(remoteStream); // Only show the shared screen
       });
+    });
+
+    socketRef.current.on('user-list', (userList) => {
+      setUsers(userList);
     });
 
     socketRef.current.on('screen-share-update', ({ peerId, isSharing }) => {
@@ -54,6 +60,7 @@ const Room = () => {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenShareStreamRef.current = screenStream;
+        setScreenStream(screenStream); // Jo share kar raha hai, usko bhi screen dikhe
         setIsScreenSharing(true);
         socketRef.current.emit('screen-share-started', { roomId, peerId: peerRef.current.id });
 
@@ -90,6 +97,15 @@ const Room = () => {
           </button>
         </div>
       </nav>
+
+      <div className="p-4 bg-gray-700 text-white">
+        <h2 className="text-lg font-semibold">Users in Room:</h2>
+        <ul>
+          {users.map((user, index) => (
+            <li key={index} className="text-sm">{user.email}</li>
+          ))}
+        </ul>
+      </div>
 
       <div className="flex justify-center items-center min-h-screen">
         {screenStream ? (

@@ -114,7 +114,7 @@ const Room = () => {
             playsInline
             autoPlay
             controls
-            className="w-full md:ml:[300px] h-full object-cover"
+            className="w-full md:ml:[500px] h-full object-cover"
             ref={(video) => {
               if (video) video.srcObject = screenStream;
             }}

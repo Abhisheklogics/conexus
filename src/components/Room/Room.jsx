@@ -108,7 +108,7 @@ const Room = () => {
         </ul>
       </div>
 
-      <div className="flex justify-center items-center md:w-[800px] md:h-[600px]">
+      <div className="flex justify-center items-center md:ml:[300px] md:w-[800px] md:h-[600px]">
         {screenStream ? (
           <video
             playsInline

@@ -108,13 +108,13 @@ const Room = () => {
         </ul>
       </div>
 
-      <div className="flex justify-center items-center md:ml:[300px] md:w-[800px] md:h-[600px]">
+      <div className="flex justify-center items-center  md:w-[800px] md:h-[600px]">
         {screenStream ? (
           <video
             playsInline
             autoPlay
             controls
-            className="w-full h-full object-cover"
+            className="w-full md:ml:[300px] h-full object-cover"
             ref={(video) => {
               if (video) video.srcObject = screenStream;
             }}

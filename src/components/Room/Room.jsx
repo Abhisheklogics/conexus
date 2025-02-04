@@ -14,7 +14,6 @@ const Room = () => {
   const peerRef = useRef(null);
   const socketRef = useRef(null);
   const screenShareStreamRef = useRef(null);
-  const currentScreenSharerRef = useRef(null);
 
   useEffect(() => {
     socketRef.current = io("https://conbeckend.onrender.com/");
@@ -26,12 +25,11 @@ const Room = () => {
     });
 
     peer.on("call", (call) => {
-  call.answer();
-  call.on("stream", (remoteStream) => {
-    setScreenStream(remoteStream);
-  });
-});
-
+      call.answer();
+      call.on("stream", (remoteStream) => {
+        setScreenStream(remoteStream);
+      });
+    });
 
     socketRef.current.on("user-list", (userList) => {
       setUsers(userList);
@@ -39,9 +37,11 @@ const Room = () => {
 
     socketRef.current.on("screen-share-update", ({ peerId, isSharing }) => {
       if (isSharing) {
-        currentScreenSharerRef.current = peerId;
+        const call = peerRef.current.call(peerId, screenShareStreamRef.current);
+        call.on("stream", (remoteStream) => {
+          setScreenStream(remoteStream);
+        });
       } else {
-        currentScreenSharerRef.current = null;
         setScreenStream(null);
       }
     });
@@ -54,33 +54,32 @@ const Room = () => {
   }, [roomId]);
 
   const toggleScreenShare = async () => {
-  if (isScreenSharing) {
-    screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
-    setIsScreenSharing(false);
-    socketRef.current.emit("screen-share-stopped", { roomId, peerId: peerRef.current.id });
-  } else {
-    try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      screenShareStreamRef.current = screenStream;
-      setScreenStream(screenStream);
-      setIsScreenSharing(true);
-      socketRef.current.emit("screen-share-started", { roomId, peerId: peerRef.current.id });
+    if (isScreenSharing) {
+      screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
+      setIsScreenSharing(false);
+      socketRef.current.emit("screen-share-stopped", { roomId, peerId: peerRef.current.id });
+    } else {
+      try {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenShareStreamRef.current = screenStream;
+        setScreenStream(screenStream);
+        setIsScreenSharing(true);
+        socketRef.current.emit("screen-share-started", { roomId, peerId: peerRef.current.id });
 
-      // Send screen stream to all connected peers
-      users.forEach((user) => {
-        if (user.peerId !== peerRef.current.id) {
-          const call = peerRef.current.call(user.peerId, screenStream);
-          call.on("stream", (remoteStream) => {
-            setScreenStream(remoteStream);
-          });
-        }
-      });
+        users.forEach((user) => {
+          if (user.peerId !== peerRef.current.id) {
+            const call = peerRef.current.call(user.peerId, screenStream);
+            call.on("stream", (remoteStream) => {
+              setScreenStream(remoteStream);
+            });
+          }
+        });
 
-    } catch (err) {
-      console.error("Error sharing screen:", err);
+      } catch (err) {
+        console.error("Error sharing screen:", err);
+      }
     }
-  }
-};
+  };
 
   const leaveRoom = () => {
     socketRef.current.emit("leave-room", { roomId, peerId: peerRef.current.id });
@@ -106,27 +105,11 @@ const Room = () => {
       <div className="p-4 bg-gray-700 text-white">
         <h2 className="text-lg font-semibold">Users in Room:</h2>
         <ul>
-          {users.map((user, index) => (
-            <li key={roomId} className="text-sm">{user.name}</li>
+          {users.map((user) => (
+            <li key={user.peerId} className="text-sm">{user.name}</li>
           ))}
         </ul>
       </div>
-
-     <div className="flex justify-center items-center min-h-screen">
-  {screenStream ? (
-    <video
-      playsInline
-      autoPlay
-      controls
-      className="md:w-[800px] md:h-[600px] md:object-contain md:mt-10"
-      ref={(video) => {
-        if (video) video.srcObject = screenStream;
-      }}
-    />
-  ) : (
-    <p className="text-xl">No screen sharing active</p>
-  )}
-</div>
     </div>
   );
 };

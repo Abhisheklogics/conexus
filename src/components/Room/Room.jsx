@@ -26,11 +26,12 @@ const Room = () => {
     });
 
     peer.on("call", (call) => {
-      call.answer();
-      call.on("stream", (remoteStream) => {
-        setScreenStream(remoteStream);
-      });
-    });
+  call.answer();
+  call.on("stream", (remoteStream) => {
+    setScreenStream(remoteStream);
+  });
+});
+
 
     socketRef.current.on("user-list", (userList) => {
       setUsers(userList);
@@ -53,30 +54,33 @@ const Room = () => {
   }, [roomId]);
 
   const toggleScreenShare = async () => {
-    if (isScreenSharing) {
-      screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
-      setIsScreenSharing(false);
-      socketRef.current.emit("screen-share-stopped", { roomId, peerId: peerRef.current.id });
-    } else {
-      try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenShareStreamRef.current = screenStream;
-        setScreenStream(screenStream);
-        setIsScreenSharing(true);
-        socketRef.current.emit("screen-share-started", { roomId, peerId: peerRef.current.id });
+  if (isScreenSharing) {
+    screenShareStreamRef.current.getTracks().forEach((track) => track.stop());
+    setIsScreenSharing(false);
+    socketRef.current.emit("screen-share-stopped", { roomId, peerId: peerRef.current.id });
+  } else {
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenShareStreamRef.current = screenStream;
+      setScreenStream(screenStream);
+      setIsScreenSharing(true);
+      socketRef.current.emit("screen-share-started", { roomId, peerId: peerRef.current.id });
 
-        Object.values(peerRef.current.connections).forEach((connections) => {
-          connections.forEach((connection) => {
-            const sender = connection.peerConnection.getSenders().find(s => s.track.kind === "video");
-            if (sender) sender.replaceTrack(screenStream.getVideoTracks()[0]);
+      // Send screen stream to all connected peers
+      users.forEach((user) => {
+        if (user.peerId !== peerRef.current.id) {
+          const call = peerRef.current.call(user.peerId, screenStream);
+          call.on("stream", (remoteStream) => {
+            setScreenStream(remoteStream);
           });
-        });
+        }
+      });
 
-      } catch (err) {
-        console.error("Error sharing screen:", err);
-      }
+    } catch (err) {
+      console.error("Error sharing screen:", err);
     }
-  };
+  }
+};
 
   const leaveRoom = () => {
     socketRef.current.emit("leave-room", { roomId, peerId: peerRef.current.id });

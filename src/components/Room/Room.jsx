@@ -162,7 +162,7 @@ const Room = () => {
                 playsInline
                 autoPlay
                 controls
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 ref={(video) => {
                   if (video) video.srcObject = stream;
                 }}

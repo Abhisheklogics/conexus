@@ -1,71 +1,52 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState ,useRef } from 'react';
+
 import { io } from 'socket.io-client';
-import { auth } from '../../../firebase.js';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-const provider = new GoogleAuthProvider();
-const socket = io('https://conbeckend.onrender.com');
+
+import Peer from 'peerjs';
+
+
 
 const LobbyRoom = () => {
     const [roomId, setRoomId] = useState('');
-    const [user, setUser] = useState(null); // For authenticated user
-    const navigate = useNavigate();
+    const socket = io('http://localhost:4000/');
+      const [stream, setStream] = useState();
+    let socketRef=useRef()
+   socketRef.current=socket
+      const peerRef = useRef(null);
 
-    const login = () => {
-     
-        signInWithPopup(auth, provider)
-            .then((result) => {
-                setUser(result.user);
-                console.log('Logged in as:', result.user.displayName);
-            })
-            .catch((err) => {
-                console.error('Error logging in:', err.message);
-            });
-    };
+   
 
-    const generateRoom = () => {
-        if (!user) {
-            alert("Please log in to generate a room!");
-            return;
-        }
-        socket.emit('create-room', { email: user.email }, (response) => {
-            if (response.success) {
-                setRoomId(response.roomId);
-                alert(`Room Code Generated: ${response.roomId}`);
-            } else {
-                alert("Failed to generate room!");
-            }
-        });
-    };
+      
+        
+    
 
     const joinRoom = () => {
-        if (!user) {
-            alert("Please log in to join a room!");
-            return;
-        }
-        if (!roomId.trim()) {
-            alert("Please enter a valid room code!");
-            return;
-        }
-        navigate(`/room/${roomId}`, { state: { roomId, email: user.email } });
+       const peer =new Peer()
+       peerRef.current = peer;
+       peerRef.current.on('open',(id)=>{
+        socketRef.current.emit('join-room',{roomId,id})
+       
+       })
+     navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+     }).then((stream)=>{
+ setStream(stream)
+ socketRef.current.on('user-connected',(roomId)=>{
+
+ })
+     })
     };
     
 
     return (
+        <>
         <div className="lobby-container flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white">
-            {!user ? (
-                <>
-                <button onClick={login} className="p-3 bg-blue-500 rounded">
-                    Sign In with Google
-                </button>
-                <p className=' text-3xl font-bold text-white'>Video Calls and meetings for everyone</p>
-                </>
-            ) : (
+            
+          
                 <div>
-                    <p className="mb-4 text-green-400">Welcome, {user.displayName}!</p>
-                    <button onClick={generateRoom} className="p-3 mb-4 bg-blue-500 rounded">
-                        Generate Room Code
-                    </button>
+                    <p className="mb-4 text-green-400">Welcome,</p>
+                  
                     <input
                         type="text"
                         placeholder="Enter Room Code"
@@ -77,8 +58,18 @@ const LobbyRoom = () => {
                         Join Room
                     </button>
                 </div>
-            )}
+               
         </div>
+        <video
+                playsInline
+                autoPlay
+                controls
+                className="w-[300px] object-contain"
+                ref={(video) => {
+                  if (video) video.srcObject = stream;
+                }}
+              />
+         </>
     );
 };
 

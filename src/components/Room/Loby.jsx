@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
-import { auth } from '../../firebase';
+import { auth } from '../../firebase.js';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 const provider = new GoogleAuthProvider();
 const socket = io('https://conbeckend.onrender.com');

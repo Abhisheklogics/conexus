@@ -1,45 +1,124 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
+import Peer from 'peerjs';
 
-const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
+const socket = io('https://conbeckend.onrender.com'); // Adjust backend URL if needed
 
-const Room = () => {
-    const { roomId } = useParams();
-    const location = useLocation();
-    const [users, setUsers] = useState([]);
+const VideoChat = () => {
+    const [roomId, setRoomId] = useState('');
+    const [joined, setJoined] = useState(false);
+    const [remoteStreams, setRemoteStreams] = useState([]);
+
+    const myVideoRef = useRef(null);
+    const videoGridRef = useRef(null);
+    const myPeer = useRef(null);
+    const peers = useRef({});
 
     useEffect(() => {
-        console.log("Joining Room:", roomId);
-        console.log("User Name:", location.state?.userName);
+        myPeer.current = new Peer(); // Initialize PeerJS
 
-        if (!socket.connected) socket.connect();
+        myPeer.current.on('open', (id) => {
+            console.log(`🔗 My Peer ID: ${id}`);
+            if (joined) {
+                socket.emit('join-room', roomId, id);
+            }
+        });
 
-        if (roomId && location.state?.userName) {
-            socket.emit('join-room', { roomId, Name: location.state.userName });
-        }
+        socket.on('user-connected', (userId) => {
+            console.log(`✅ User connected: ${userId}`);
+            if (myVideoRef.current && myVideoRef.current.srcObject) {
+                connectToNewUser(userId, myVideoRef.current.srcObject);
+            }
+        });
 
-        socket.on('update-user-list', (userList) => {
-            console.log("Updated User List:", userList);
-            setUsers(userList);
+        socket.on('user-disconnected', (userId) => {
+            if (peers.current[userId]) {
+                peers.current[userId].close();
+                delete peers.current[userId];
+            }
+            setRemoteStreams((streams) => streams.filter((stream) => stream.userId !== userId));
         });
 
         return () => {
-            socket.off('update-user-list');
+            socket.off('user-connected');
+            socket.off('user-disconnected');
         };
-    }, [roomId, location.state]);
+    }, [joined, roomId]);
+
+    const joinRoom = async () => {
+        if (!roomId) return alert('⚠️ Please enter a Room ID');
+        setJoined(true);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+        if (myVideoRef.current) {
+            myVideoRef.current.srcObject = stream;
+        }
+
+        myPeer.current.on('call', (call) => {
+            call.answer(stream);
+            const video = document.createElement('video');
+            call.on('stream', (userStream) => {
+                addVideoStream(video, userStream);
+            });
+        });
+
+        socket.emit('join-room', roomId, myPeer.current.id);
+    };
+
+    const connectToNewUser = (userId, stream) => {
+        console.log(`📞 Calling new user: ${userId}`);
+        const call = myPeer.current.call(userId, stream);
+        const video = document.createElement('video');
+
+        call.on('stream', (userStream) => {
+            addVideoStream(video, userStream);
+        });
+
+        call.on('close', () => {
+            video.remove();
+        });
+
+        peers.current[userId] = call;
+    };
+
+    const addVideoStream = (video, stream) => {
+        video.srcObject = stream;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.style.width = '200px';
+        video.style.margin = '10px';
+        video.addEventListener('loadedmetadata', () => {
+            video.play();
+        });
+        videoGridRef.current.append(video);
+    };
 
     return (
-        <div className="room-container min-h-screen bg-gray-900 text-white p-4">
-            <h1 className="text-2xl font-bold mb-4">Room ID: {roomId}</h1>
-            <h2 className="text-lg mb-4">Connected Users:</h2>
-            <ul className="mb-4">
-                {users.map((user) => (
-                    <li key={user.id} className="text-green-400">{user.Name}</li>
-                ))}
-            </ul>
+        <div className="flex flex-col items-center p-4">
+            {!joined ? (
+                <div className="flex flex-col items-center space-y-3">
+                    <input
+                        type="text"
+                        placeholder="Enter Room ID"
+                        value={roomId}
+                        onChange={(e) => setRoomId(e.target.value)}
+                        className="border p-2 rounded-md"
+                    />
+                    <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">
+                        Join Room
+                    </button>
+                </div>
+            ) : (
+                <div className="w-full max-w-4xl flex flex-col items-center">
+                    <h2 className="text-xl font-semibold">Room ID: {roomId}</h2>
+                    <div ref={videoGridRef} id="video-grid" className="grid grid-cols-2 gap-4 p-4">
+                        <video ref={myVideoRef} muted autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"></video>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-export default Room;
+export default VideoChat;

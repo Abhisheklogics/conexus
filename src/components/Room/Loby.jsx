@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
+const socket = io('https://conbeckend.onrender.com');
 
 const LobbyRoom = () => {
     const [roomId, setRoomId] = useState('');

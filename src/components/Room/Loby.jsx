@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const socket = io('https://conbeckend.onrender.com');
+const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
 
 const LobbyRoom = () => {
     const [roomId, setRoomId] = useState('');
@@ -10,6 +10,11 @@ const LobbyRoom = () => {
     const navigate = useNavigate();
 
     const JoinRoom = () => {
+        if (!roomId.trim() || !Name.trim()) {
+            alert("Please enter both Room ID and Name!");
+            return;
+        }
+        
         socket.emit('join-room', { roomId, Name });
         navigate(`/room/${roomId}`, { state: { roomId, userName: Name } });
     };

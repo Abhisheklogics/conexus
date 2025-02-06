@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
+const socket = io('https://conbeckend.onrender.com');
 
 const Room = () => {
     const { roomId } = useParams();

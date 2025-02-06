@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
 
@@ -8,14 +8,15 @@ const VideoChat = () => {
     const [roomId, setRoomId] = useState('');
     const [joined, setJoined] = useState(false);
     const [remoteStreams, setRemoteStreams] = useState([]);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
 
     const myVideoRef = useRef(null);
-    const videoGridRef = useRef(null);
     const myPeer = useRef(null);
     const peers = useRef({});
+    const screenStreamRef = useRef(null);
 
     useEffect(() => {
-        myPeer.current = new Peer(); // Initialize PeerJS
+        myPeer.current = new Peer();
 
         myPeer.current.on('open', (id) => {
             console.log(`🔗 My Peer ID: ${id}`);
@@ -26,9 +27,7 @@ const VideoChat = () => {
 
         socket.on('user-connected', (userId) => {
             console.log(`✅ User connected: ${userId}`);
-            if (myVideoRef.current && myVideoRef.current.srcObject) {
-                connectToNewUser(userId, myVideoRef.current.srcObject);
-            }
+            connectToNewUser(userId, myVideoRef.current.srcObject);
         });
 
         socket.on('user-disconnected', (userId) => {
@@ -36,7 +35,7 @@ const VideoChat = () => {
                 peers.current[userId].close();
                 delete peers.current[userId];
             }
-            setRemoteStreams((streams) => streams.filter((stream) => stream.userId !== userId));
+            setRemoteStreams((streams) => streams.filter(({ id }) => id !== userId));
         });
 
         return () => {
@@ -57,9 +56,8 @@ const VideoChat = () => {
 
         myPeer.current.on('call', (call) => {
             call.answer(stream);
-            const video = document.createElement('video');
             call.on('stream', (userStream) => {
-                addVideoStream(video, userStream);
+                setRemoteStreams((prevStreams) => [...prevStreams, { id: call.peer, stream: userStream }]);
             });
         });
 
@@ -69,29 +67,29 @@ const VideoChat = () => {
     const connectToNewUser = (userId, stream) => {
         console.log(`📞 Calling new user: ${userId}`);
         const call = myPeer.current.call(userId, stream);
-        const video = document.createElement('video');
 
         call.on('stream', (userStream) => {
-            addVideoStream(video, userStream);
+            setRemoteStreams((prevStreams) => [...prevStreams, { id: userId, stream: userStream }]);
         });
 
         call.on('close', () => {
-            video.remove();
+            setRemoteStreams((prevStreams) => prevStreams.filter(({ id }) => id !== userId));
         });
 
         peers.current[userId] = call;
     };
 
-    const addVideoStream = (video, stream) => {
-        video.srcObject = stream;
-        video.autoplay = true;
-        video.playsInline = true;
-        video.style.width = '200px';
-        video.style.margin = '10px';
-        video.addEventListener('loadedmetadata', () => {
-            video.play();
-        });
-        videoGridRef.current.append(video);
+    const toggleScreenShare = async () => {
+        if (isScreenSharing) {
+            screenStreamRef.current.getTracks().forEach((track) => track.stop());
+            setIsScreenSharing(false);
+            return;
+        }
+
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenStreamRef.current = screenStream;
+        setIsScreenSharing(true);
+        Object.values(peers.current).forEach((peer) => peer.peerConnection.addStream(screenStream));
     };
 
     return (
@@ -112,9 +110,19 @@ const VideoChat = () => {
             ) : (
                 <div className="w-full max-w-4xl flex flex-col items-center">
                     <h2 className="text-xl font-semibold">Room ID: {roomId}</h2>
-                    <div ref={videoGridRef} id="video-grid" className="grid grid-cols-2 gap-4 p-4">
+                    <div id="video-grid" className="grid grid-cols-2 gap-4 p-4">
                         <video ref={myVideoRef} muted autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"></video>
+                        {remoteStreams.map(({ id, stream }) => (
+                            <video key={id} autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"
+                                ref={(video) => {
+                                    if (video && !video.srcObject) video.srcObject = stream;
+                                }}>
+                            </video>
+                        ))}
                     </div>
+                    <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">
+                        {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+                    </button>
                 </div>
             )}
         </div>

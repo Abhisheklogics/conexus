@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
 
-const socket = io('https://conbeckend.onrender.com'); // Adjust backend URL if needed
+const socket = io('https://conbeckend.onrender.com');
 
 const VideoChat = () => {
     const [roomId, setRoomId] = useState('');
@@ -39,11 +39,8 @@ const VideoChat = () => {
             setRemoteStreams((streams) => streams.filter(({ id }) => id !== userId));
         });
 
-        socket.on('screen-share-started', ({ userId, streamId }) => {
+        socket.on('screen-share-started', ({ userId }) => {
             console.log(`📺 Screen sharing started by: ${userId}`);
-            if (screenVideoRef.current) {
-                screenVideoRef.current.srcObject = streamId;
-            }
         });
 
         socket.on('screen-share-stopped', ({ userId }) => {
@@ -108,7 +105,7 @@ const VideoChat = () => {
         screenStreamRef.current = screenStream;
         setIsScreenSharing(true);
         Object.values(peers.current).forEach((peer) => peer.peerConnection.addStream(screenStream));
-        socket.emit('screen-share', { roomId, userId: myPeer.current.id, streamId: screenStream });
+        socket.emit('screen-share', { roomId, userId: myPeer.current.id });
     };
 
     return (

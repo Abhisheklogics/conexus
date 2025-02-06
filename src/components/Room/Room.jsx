@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import { io } from 'socket.io-client';
 
-const socket = io('https://conbeckend.onrender.com');
+const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
 
 const Room = () => {
     const { roomId } = useParams();
@@ -10,25 +10,25 @@ const Room = () => {
     const [users, setUsers] = useState([]);
 
     useEffect(() => {
-      console.log("Joining Room:", roomId);
-      console.log("User Name:", location.state?.userName);
-  
-      if (!socket.connected) socket.connect();
-  
-      if (roomId && location.state?.userName) {
-          socket.emit('join-room', { roomId, Name: location.state.userName });
-      }
-  
-      socket.on('update-user-list', (userList) => {
-          console.log("Updated User List:", userList);
-          setUsers(userList);
-      });
-  
-      return () => {
-          socket.off('update-user-list');
-      };
-  }, [roomId, location.state]);
-  
+        console.log("Joining Room:", roomId);
+        console.log("User Name:", location.state?.userName);
+
+        if (!socket.connected) socket.connect();
+
+        if (roomId && location.state?.userName) {
+            socket.emit('join-room', { roomId, Name: location.state.userName });
+        }
+
+        socket.on('update-user-list', (userList) => {
+            console.log("Updated User List:", userList);
+            setUsers(userList);
+        });
+
+        return () => {
+            socket.off('update-user-list');
+        };
+    }, [roomId, location.state]);
+
     return (
         <div className="room-container min-h-screen bg-gray-900 text-white p-4">
             <h1 className="text-2xl font-bold mb-4">Room ID: {roomId}</h1>

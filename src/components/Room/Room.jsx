@@ -11,6 +11,7 @@ const VideoChat = () => {
     const [isScreenSharing, setIsScreenSharing] = useState(false);
 
     const myVideoRef = useRef(null);
+    const screenVideoRef = useRef(null);
     const myPeer = useRef(null);
     const peers = useRef({});
     const screenStreamRef = useRef(null);
@@ -21,11 +22,11 @@ const VideoChat = () => {
         myPeer.current.on('open', (id) => {
             console.log(`🔗 My Peer ID: ${id}`);
             if (joined) {
-                socket.emit('join-room', roomId, id);
+                socket.emit('join-room', { roomId, userId: id });
             }
         });
 
-        socket.on('user-connected', (userId) => {
+        socket.on('user-connected', ({ userId }) => {
             console.log(`✅ User connected: ${userId}`);
             connectToNewUser(userId, myVideoRef.current.srcObject);
         });
@@ -38,9 +39,25 @@ const VideoChat = () => {
             setRemoteStreams((streams) => streams.filter(({ id }) => id !== userId));
         });
 
+        socket.on('screen-share-started', ({ userId, streamId }) => {
+            console.log(`📺 Screen sharing started by: ${userId}`);
+            if (screenVideoRef.current) {
+                screenVideoRef.current.srcObject = streamId;
+            }
+        });
+
+        socket.on('screen-share-stopped', ({ userId }) => {
+            console.log(`📺 Screen sharing stopped by: ${userId}`);
+            if (screenVideoRef.current) {
+                screenVideoRef.current.srcObject = null;
+            }
+        });
+
         return () => {
             socket.off('user-connected');
             socket.off('user-disconnected');
+            socket.off('screen-share-started');
+            socket.off('screen-share-stopped');
         };
     }, [joined, roomId]);
 
@@ -61,7 +78,7 @@ const VideoChat = () => {
             });
         });
 
-        socket.emit('join-room', roomId, myPeer.current.id);
+        socket.emit('join-room', { roomId, userId: myPeer.current.id });
     };
 
     const connectToNewUser = (userId, stream) => {
@@ -82,6 +99,7 @@ const VideoChat = () => {
     const toggleScreenShare = async () => {
         if (isScreenSharing) {
             screenStreamRef.current.getTracks().forEach((track) => track.stop());
+            socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
             setIsScreenSharing(false);
             return;
         }
@@ -90,6 +108,7 @@ const VideoChat = () => {
         screenStreamRef.current = screenStream;
         setIsScreenSharing(true);
         Object.values(peers.current).forEach((peer) => peer.peerConnection.addStream(screenStream));
+        socket.emit('screen-share', { roomId, userId: myPeer.current.id, streamId: screenStream });
     };
 
     return (
@@ -119,6 +138,7 @@ const VideoChat = () => {
                                 }}>
                             </video>
                         ))}
+                        <video ref={screenVideoRef} autoPlay playsInline className="w-[400px] h-[300px] bg-gray-900 rounded-md"></video>
                     </div>
                     <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">
                         {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}

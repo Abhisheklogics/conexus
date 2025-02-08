@@ -150,18 +150,12 @@ const VideoChat = () => {
                         <video ref={myVideoRef} muted autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"></video>
                         {remoteStreams.map(({ id, stream }) => (
                             <video key={id} autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"
-                                 ref={(video) => {
+                                ref={(video) => {
                                     if (video && !video.srcObject) video.srcObject = stream;
-                                }}
-                               >
+                                }}>
                             </video>
                         ))}
-                        <video ref={screenVideoRef} 
-                  autoPlay 
-                 playsInline 
-                className="w-full md:w-[800px] h-[400px] md:h-[500px] bg-gray-900 rounded-md object-contain">
-            </video>
-
+                        <video ref={screenVideoRef} autoPlay playsInline className="w-[400px] h-[300px] bg-gray-900 rounded-md"></video>
                     </div>
                     <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">
                         {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}

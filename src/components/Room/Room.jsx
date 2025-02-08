@@ -15,6 +15,7 @@ const VideoChat = () => {
     const myPeer = useRef(null);
     const peers = useRef({});
     const screenStreamRef = useRef(null);
+    const myStreamRef = useRef(null);
 
     useEffect(() => {
         myPeer.current = new Peer();
@@ -28,7 +29,7 @@ const VideoChat = () => {
 
         socket.on('user-connected', ({ userId }) => {
             console.log(`✅ User connected: ${userId}`);
-            connectToNewUser(userId, myVideoRef.current.srcObject);
+            connectToNewUser(userId, myStreamRef.current);
         });
 
         socket.on('user-disconnected', (userId) => {
@@ -63,6 +64,7 @@ const VideoChat = () => {
         setJoined(true);
 
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        myStreamRef.current = stream;
 
         if (myVideoRef.current) {
             myVideoRef.current.srcObject = stream;
@@ -71,7 +73,10 @@ const VideoChat = () => {
         myPeer.current.on('call', (call) => {
             call.answer(stream);
             call.on('stream', (userStream) => {
-                setRemoteStreams((prevStreams) => [...prevStreams, { id: call.peer, stream: userStream }]);
+                setRemoteStreams((prevStreams) => {
+                    if (prevStreams.find((s) => s.id === call.peer)) return prevStreams;
+                    return [...prevStreams, { id: call.peer, stream: userStream }];
+                });
             });
         });
 
@@ -83,7 +88,10 @@ const VideoChat = () => {
         const call = myPeer.current.call(userId, stream);
 
         call.on('stream', (userStream) => {
-            setRemoteStreams((prevStreams) => [...prevStreams, { id: userId, stream: userStream }]);
+            setRemoteStreams((prevStreams) => {
+                if (prevStreams.find((s) => s.id === userId)) return prevStreams;
+                return [...prevStreams, { id: userId, stream: userStream }];
+            });
         });
 
         call.on('close', () => {
@@ -104,7 +112,19 @@ const VideoChat = () => {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenStreamRef.current = screenStream;
         setIsScreenSharing(true);
-        Object.values(peers.current).forEach((peer) => peer.peerConnection.addStream(screenStream));
+
+        Object.values(peers.current).forEach((peer) => {
+            peer.peerConnection.getSenders().forEach((sender) => {
+                if (sender.track.kind === 'video') {
+                    sender.replaceTrack(screenStream.getVideoTracks()[0]);
+                }
+            });
+        });
+
+        if (screenVideoRef.current) {
+            screenVideoRef.current.srcObject = screenStream;
+        }
+
         socket.emit('screen-share', { roomId, userId: myPeer.current.id });
     };
 

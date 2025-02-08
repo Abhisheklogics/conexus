@@ -155,7 +155,7 @@ const VideoChat = () => {
                                 }}>
                             </video>
                         ))}
-                        <video ref={screenVideoRef} autoPlay playsInline className="w-[400px] h-[300px] bg-gray-900 rounded-md"></video>
+                        <video ref={screenVideoRef} autoPlay playsInline className="w-[700px] h-[500px] bg-gray-900 rounded-md"></video>
                     </div>
                     <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">
                         {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}

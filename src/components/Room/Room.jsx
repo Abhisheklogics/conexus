@@ -150,6 +150,9 @@ const VideoChat = () => {
                         <video ref={myVideoRef} muted autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"></video>
                         {remoteStreams.map(({ id, stream }) => (
                             <video key={id} autoPlay playsInline className="w-[200px] h-[200px] bg-gray-800 rounded-md"
+                                 ref={(video) => {
+                                    if (video && !video.srcObject) video.srcObject = stream;
+                                }}
                                >
                             </video>
                         ))}

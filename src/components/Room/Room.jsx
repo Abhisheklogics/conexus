@@ -9,6 +9,7 @@ const VideoChat = () => {
     const [joined, setJoined] = useState(false);
     const [remoteStreams, setRemoteStreams] = useState([]);
     const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [screenSharer, setScreenSharer] = useState(null);
 
     const myVideoRef = useRef(null);
     const screenVideoRef = useRef(null);
@@ -42,10 +43,12 @@ const VideoChat = () => {
 
         socket.on('screen-share-started', ({ userId }) => {
             console.log(`📺 Screen sharing started by: ${userId}`);
+            setScreenSharer(userId);
         });
 
         socket.on('screen-share-stopped', ({ userId }) => {
             console.log(`📺 Screen sharing stopped by: ${userId}`);
+            setScreenSharer(null);
             if (screenVideoRef.current) {
                 screenVideoRef.current.srcObject = null;
             }
@@ -102,6 +105,11 @@ const VideoChat = () => {
     };
 
     const toggleScreenShare = async () => {
+        if (screenSharer && screenSharer !== myPeer.current.id) {
+            alert('⚠️ Another user is already sharing their screen!');
+            return;
+        }
+
         if (isScreenSharing) {
             screenStreamRef.current.getTracks().forEach((track) => track.stop());
             socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
@@ -132,16 +140,8 @@ const VideoChat = () => {
         <div className="flex flex-col items-center p-4">
             {!joined ? (
                 <div className="flex flex-col items-center space-y-3">
-                    <input
-                        type="text"
-                        placeholder="Enter Room ID"
-                        value={roomId}
-                        onChange={(e) => setRoomId(e.target.value)}
-                        className="border p-2 rounded-md"
-                    />
-                    <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">
-                        Join Room
-                    </button>
+                    <input type="text" placeholder="Enter Room ID" value={roomId} onChange={(e) => setRoomId(e.target.value)} className="border p-2 rounded-md" />
+                    <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">Join Room</button>
                 </div>
             ) : (
                 <div className="w-full max-w-4xl flex flex-col items-center">

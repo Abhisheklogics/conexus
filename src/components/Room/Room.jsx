@@ -55,7 +55,7 @@ const VideoChat = () => {
         if (screenVideoRef.current) {
             screenVideoRef.current.srcObject = screenStream;
         }
-        socket.emit('screen-share', { roomId, userId: myPeer.current.id, stream: screenStream });
+        socket.emit('screen-share', { roomId, userId: myPeer.current.id });
     };
 
     return (

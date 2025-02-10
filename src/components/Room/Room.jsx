@@ -13,6 +13,9 @@ const VideoChat = () => {
 
     const screenVideoRef = useRef(null);
     const myPeer = useRef(null);
+    const peers = useRef({});
+    const myStreamRef = useRef(null);
+    const screenStreamRef = useRef(null);
 
     useEffect(() => {
         myPeer.current = new Peer();
@@ -37,12 +40,46 @@ const VideoChat = () => {
                 screenVideoRef.current.srcObject = null;
             }
         });
+
+        socket.on('user-connected', ({ userId }) => {
+            connectToNewUser(userId, myStreamRef.current);
+        });
+
+        socket.on('user-disconnected', (userId) => {
+            if (peers.current[userId]) {
+                peers.current[userId].close();
+                delete peers.current[userId];
+            }
+        });
     }, [joined, roomId]);
 
-    const joinRoom = () => {
+    const joinRoom = async () => {
         if (!roomId || !name) return alert('Please enter Room ID and Name');
         setJoined(true);
+
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        myStreamRef.current = stream;
+
+        myPeer.current.on('call', (call) => {
+            call.answer(stream);
+            call.on('stream', (userStream) => {
+                if (screenVideoRef.current) {
+                    screenVideoRef.current.srcObject = userStream;
+                }
+            });
+        });
+
         socket.emit('join-room', { roomId, userId: myPeer.current.id, name });
+    };
+
+    const connectToNewUser = (userId, stream) => {
+        const call = myPeer.current.call(userId, stream);
+        call.on('stream', (userStream) => {
+            if (screenVideoRef.current) {
+                screenVideoRef.current.srcObject = userStream;
+            }
+        });
+        peers.current[userId] = call;
     };
 
     const toggleScreenShare = async () => {
@@ -52,9 +89,21 @@ const VideoChat = () => {
         }
 
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        screenStreamRef.current = screenStream;
+        setScreenSharer(myPeer.current.id);
+
+        Object.values(peers.current).forEach((peer) => {
+            peer.peerConnection.getSenders().forEach((sender) => {
+                if (sender.track.kind === 'video') {
+                    sender.replaceTrack(screenStream.getVideoTracks()[0]);
+                }
+            });
+        });
+
         if (screenVideoRef.current) {
             screenVideoRef.current.srcObject = screenStream;
         }
+
         socket.emit('screen-share', { roomId, userId: myPeer.current.id });
     };
 

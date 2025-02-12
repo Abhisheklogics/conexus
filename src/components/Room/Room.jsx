@@ -1,3 +1,4 @@
+// Client Side (React Component)
 import React, { useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import Peer from 'peerjs';
@@ -8,26 +9,18 @@ const VideoChat = () => {
     const [roomId, setRoomId] = useState('');
     const [name, setName] = useState('');
     const [joined, setJoined] = useState(false);
-    const [users, setUsers] = useState([]);
     const [screenSharer, setScreenSharer] = useState(null);
-
+    
     const screenVideoRef = useRef(null);
-    const myPeer = useRef(null);
+    const myPeer = useRef(new Peer());
     const peers = useRef({});
-    const myStreamRef = useRef(null);
     const screenStreamRef = useRef(null);
 
     useEffect(() => {
-        myPeer.current = new Peer();
-
         myPeer.current.on('open', (id) => {
             if (joined) {
                 socket.emit('join-room', { roomId, userId: id, name });
             }
-        });
-
-        socket.on('user-list', (userList) => {
-            setUsers(userList);
         });
 
         socket.on('screen-share-started', ({ userId }) => {
@@ -35,10 +28,6 @@ const VideoChat = () => {
             if (myPeer.current.id !== userId) {
                 requestScreenStream(userId);
             }
-        });
-
-        socket.on('connect-screen-share', ({ screenSharer }) => {
-            requestScreenStream(screenSharer);
         });
 
         socket.on('screen-share-stopped', () => {
@@ -56,22 +45,9 @@ const VideoChat = () => {
         });
     }, [joined, roomId]);
 
-    const joinRoom = async () => {
+    const joinRoom = () => {
         if (!roomId || !name) return alert('Please enter Room ID and Name');
         setJoined(true);
-
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        myStreamRef.current = stream;
-
-        myPeer.current.on('call', (call) => {
-            call.answer(stream);
-            call.on('stream', (userStream) => {
-                if (screenVideoRef.current) {
-                    screenVideoRef.current.srcObject = userStream;
-                }
-            });
-        });
-
         socket.emit('join-room', { roomId, userId: myPeer.current.id, name });
     };
 
@@ -85,23 +61,9 @@ const VideoChat = () => {
             const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             screenStreamRef.current = screenStream;
             setScreenSharer(myPeer.current.id);
-
             socket.emit('screen-share', { roomId, userId: myPeer.current.id });
 
-            Object.keys(peers.current).forEach((userId) => {
-                const call = myPeer.current.call(userId, screenStream);
-                call.on('stream', (userStream) => {
-                    if (screenVideoRef.current) {
-                        screenVideoRef.current.srcObject = userStream;
-                    }
-                });
-                peers.current[userId] = call;
-            });
-
-            if (screenVideoRef.current) {
-                screenVideoRef.current.srcObject = screenStream;
-            }
-
+            socket.emit('broadcast-screen-stream', { roomId, userId: myPeer.current.id });
             screenStream.getVideoTracks()[0].onended = () => {
                 stopScreenShare();
             };
@@ -121,13 +83,10 @@ const VideoChat = () => {
 
     const requestScreenStream = (screenSharerId) => {
         if (myPeer.current.id !== screenSharerId) {
-            const call = myPeer.current.call(screenSharerId, myStreamRef.current);
-            call.on('stream', (screenStream) => {
-                if (screenVideoRef.current) {
-                    screenVideoRef.current.srcObject = screenStream;
-                }
+            const conn = myPeer.current.connect(screenSharerId);
+            conn.on('open', () => {
+                conn.send('request-screen');
             });
-            peers.current[screenSharerId] = call;
         }
     };
 
@@ -140,10 +99,9 @@ const VideoChat = () => {
                     <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">Join Room</button>
                 </div>
             ) : (
-                <div className="w-full max-w-4xl flex flex-col items-center">
-                    <h2 className="text-xl font-semibold">Room ID: {roomId}</h2>
-                    <video ref={screenVideoRef} autoPlay playsInline className="w-[400px] h-[300px] bg-gray-900 rounded-md"></video>
-                    <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">Share Screen</button>
+                <div>
+                    <video ref={screenVideoRef} autoPlay playsInline></video>
+                    <button onClick={toggleScreenShare}>Share Screen</button>
                 </div>
             )}
         </div>

@@ -83,19 +83,24 @@ const VideoChat = () => {
     };
 
     const toggleScreenShare = async () => {
-        if (screenSharer && screenSharer !== myPeer.current.id) {
-            alert('Another user is already sharing their screen!');
-            return;
-        }
+    if (screenSharer && screenSharer !== myPeer.current.id) {
+        alert('Another user is already sharing their screen!');
+        return;
+    }
 
+    try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         screenStreamRef.current = screenStream;
         setScreenSharer(myPeer.current.id);
 
-        Object.values(peers.current).forEach((peer) => {
-            peer.peerConnection.getSenders().forEach((sender) => {
-                if (sender.track.kind === 'video') {
-                    sender.replaceTrack(screenStream.getVideoTracks()[0]);
+        // Emit event to inform others about screen sharing
+        socket.emit('screen-share', { roomId, userId: myPeer.current.id });
+
+        Object.keys(peers.current).forEach((userId) => {
+            const call = myPeer.current.call(userId, screenStream);
+            call.on('stream', (userStream) => {
+                if (screenVideoRef.current) {
+                    screenVideoRef.current.srcObject = userStream;
                 }
             });
         });
@@ -104,8 +109,24 @@ const VideoChat = () => {
             screenVideoRef.current.srcObject = screenStream;
         }
 
-        socket.emit('screen-share', { roomId, userId: myPeer.current.id });
-    };
+        // Stop sharing when screen is closed
+        screenStream.getVideoTracks()[0].onended = () => {
+            stopScreenShare();
+        };
+    } catch (error) {
+        console.error("Error sharing screen:", error);
+    }
+};
+
+const stopScreenShare = () => {
+    if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach(track => track.stop());
+        screenStreamRef.current = null;
+    }
+    setScreenSharer(null);
+    socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
+};
+
 
     return (
         <div className="flex flex-col items-center p-4">

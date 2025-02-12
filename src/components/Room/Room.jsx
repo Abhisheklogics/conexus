@@ -32,18 +32,13 @@ const VideoChat = () => {
 
         socket.on('screen-share-started', ({ userId }) => {
             setScreenSharer(userId);
+            if (myPeer.current.id !== userId) {
+                requestScreenStream(userId);
+            }
         });
 
         socket.on('connect-screen-share', ({ screenSharer }) => {
-            if (myPeer.current && myPeer.current.id !== screenSharer) {
-                const call = myPeer.current.call(screenSharer, myStreamRef.current);
-                call.on('stream', (screenStream) => {
-                    if (screenVideoRef.current) {
-                        screenVideoRef.current.srcObject = screenStream;
-                    }
-                });
-                peers.current[screenSharer] = call;
-            }
+            requestScreenStream(screenSharer);
         });
 
         socket.on('screen-share-stopped', () => {
@@ -100,6 +95,7 @@ const VideoChat = () => {
                         screenVideoRef.current.srcObject = userStream;
                     }
                 });
+                peers.current[userId] = call;
             });
 
             if (screenVideoRef.current) {
@@ -121,6 +117,18 @@ const VideoChat = () => {
         }
         setScreenSharer(null);
         socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
+    };
+
+    const requestScreenStream = (screenSharerId) => {
+        if (myPeer.current.id !== screenSharerId) {
+            const call = myPeer.current.call(screenSharerId, myStreamRef.current);
+            call.on('stream', (screenStream) => {
+                if (screenVideoRef.current) {
+                    screenVideoRef.current.srcObject = screenStream;
+                }
+            });
+            peers.current[screenSharerId] = call;
+        }
     };
 
     return (

@@ -34,15 +34,23 @@ const VideoChat = () => {
             setScreenSharer(userId);
         });
 
+        socket.on('connect-screen-share', ({ screenSharer }) => {
+            if (myPeer.current && myPeer.current.id !== screenSharer) {
+                const call = myPeer.current.call(screenSharer, myStreamRef.current);
+                call.on('stream', (screenStream) => {
+                    if (screenVideoRef.current) {
+                        screenVideoRef.current.srcObject = screenStream;
+                    }
+                });
+                peers.current[screenSharer] = call;
+            }
+        });
+
         socket.on('screen-share-stopped', () => {
             setScreenSharer(null);
             if (screenVideoRef.current) {
                 screenVideoRef.current.srcObject = null;
             }
-        });
-
-        socket.on('user-connected', ({ userId }) => {
-            connectToNewUser(userId, myStreamRef.current);
         });
 
         socket.on('user-disconnected', (userId) => {
@@ -72,61 +80,48 @@ const VideoChat = () => {
         socket.emit('join-room', { roomId, userId: myPeer.current.id, name });
     };
 
-    const connectToNewUser = (userId, stream) => {
-        const call = myPeer.current.call(userId, stream);
-        call.on('stream', (userStream) => {
-            if (screenVideoRef.current) {
-                screenVideoRef.current.srcObject = userStream;
-            }
-        });
-        peers.current[userId] = call;
-    };
-
     const toggleScreenShare = async () => {
-    if (screenSharer && screenSharer !== myPeer.current.id) {
-        alert('Another user is already sharing their screen!');
-        return;
-    }
-
-    try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenStreamRef.current = screenStream;
-        setScreenSharer(myPeer.current.id);
-
-        // Emit event to inform others about screen sharing
-        socket.emit('screen-share', { roomId, userId: myPeer.current.id });
-
-        Object.keys(peers.current).forEach((userId) => {
-            const call = myPeer.current.call(userId, screenStream);
-            call.on('stream', (userStream) => {
-                if (screenVideoRef.current) {
-                    screenVideoRef.current.srcObject = userStream;
-                }
-            });
-        });
-
-        if (screenVideoRef.current) {
-            screenVideoRef.current.srcObject = screenStream;
+        if (screenSharer && screenSharer !== myPeer.current.id) {
+            alert('Another user is already sharing their screen!');
+            return;
         }
 
-        // Stop sharing when screen is closed
-        screenStream.getVideoTracks()[0].onended = () => {
-            stopScreenShare();
-        };
-    } catch (error) {
-        console.error("Error sharing screen:", error);
-    }
-};
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            screenStreamRef.current = screenStream;
+            setScreenSharer(myPeer.current.id);
 
-const stopScreenShare = () => {
-    if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(track => track.stop());
-        screenStreamRef.current = null;
-    }
-    setScreenSharer(null);
-    socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
-};
+            socket.emit('screen-share', { roomId, userId: myPeer.current.id });
 
+            Object.keys(peers.current).forEach((userId) => {
+                const call = myPeer.current.call(userId, screenStream);
+                call.on('stream', (userStream) => {
+                    if (screenVideoRef.current) {
+                        screenVideoRef.current.srcObject = userStream;
+                    }
+                });
+            });
+
+            if (screenVideoRef.current) {
+                screenVideoRef.current.srcObject = screenStream;
+            }
+
+            screenStream.getVideoTracks()[0].onended = () => {
+                stopScreenShare();
+            };
+        } catch (error) {
+            console.error("Error sharing screen:", error);
+        }
+    };
+
+    const stopScreenShare = () => {
+        if (screenStreamRef.current) {
+            screenStreamRef.current.getTracks().forEach(track => track.stop());
+            screenStreamRef.current = null;
+        }
+        setScreenSharer(null);
+        socket.emit('stop-screen-share', { roomId, userId: myPeer.current.id });
+    };
 
     return (
         <div className="flex flex-col items-center p-4">
@@ -139,18 +134,8 @@ const stopScreenShare = () => {
             ) : (
                 <div className="w-full max-w-4xl flex flex-col items-center">
                     <h2 className="text-xl font-semibold">Room ID: {roomId}</h2>
-                    <div className="p-4">
-                        <h3 className="text-lg font-bold">Connected Users:</h3>
-                        <ul>
-                            {users.map((user) => (
-                                <li key={user.userId} className="p-2 border-b">{user.name}</li>
-                            ))}
-                        </ul>
-                    </div>
                     <video ref={screenVideoRef} autoPlay playsInline className="w-[400px] h-[300px] bg-gray-900 rounded-md"></video>
-                    <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">
-                        Share Screen
-                    </button>
+                    <button onClick={toggleScreenShare} className="mt-4 bg-green-500 text-white px-4 py-2 rounded-md">Share Screen</button>
                 </div>
             )}
         </div>

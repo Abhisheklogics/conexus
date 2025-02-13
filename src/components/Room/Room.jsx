@@ -50,34 +50,47 @@ const VideoChat = () => {
     socket.emit("join-room", { roomId, userId: myPeer.current.id, name });
   };
 
- const toggleScreenShare = async () => {
+  const toggleScreenShare = async () => {
     if (screenSharer && screenSharer !== myPeer.current.id) {
-        alert("Another user is already sharing their screen!");
-        return;
+      alert("Another user is already sharing their screen!");
+      return;
     }
 
     try {
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-        screenStreamRef.current = screenStream;
-        setScreenSharer(myPeer.current.id);
-        socket.emit("screen-share", { roomId, userId: myPeer.current.id });
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+      screenStreamRef.current = screenStream;
+      setScreenSharer(myPeer.current.id);
+      socket.emit("screen-share", { roomId, userId: myPeer.current.id });
 
-        // **Set the screen stream for the sharer**
-        if (screenVideoRef.current) {
-            screenVideoRef.current.srcObject = screenStream;
-        }
+      // Broadcast the screen stream to all users
+      myPeer.current.on("connection", (conn) => {
+        conn.on("data", (message) => {
+          if (message === "request-screen") {
+            const call = myPeer.current.call(conn.peer, screenStream);
+            call.on("stream", (remoteStream) => {
+              if (screenVideoRef.current) {
+                screenVideoRef.current.srcObject = remoteStream;
+              }
+            });
+          }
+        });
+      });
 
-        screenStream.getVideoTracks()[0].onended = () => {
-            stopScreenShare();
-        };
+      if (screenVideoRef.current) {
+        screenVideoRef.current.srcObject = screenStream;
+      }
+
+      screenStream.getVideoTracks()[0].onended = () => {
+        stopScreenShare();
+      };
     } catch (error) {
-        console.error("Error sharing screen:", error);
+      console.error("Error sharing screen:", error);
     }
-};
+  };
 
   const stopScreenShare = () => {
     if (screenStreamRef.current) {
-      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
     setScreenSharer(null);
@@ -89,6 +102,13 @@ const VideoChat = () => {
       const conn = myPeer.current.connect(screenSharerId);
       conn.on("open", () => {
         conn.send("request-screen");
+      });
+
+      const call = myPeer.current.call(screenSharerId, null);
+      call.on("stream", (remoteStream) => {
+        if (screenVideoRef.current) {
+          screenVideoRef.current.srcObject = remoteStream;
+        }
       });
     }
   };

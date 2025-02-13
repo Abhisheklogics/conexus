@@ -4,7 +4,7 @@ import Peer from "peerjs";
 
 const socket = io("https://conbeckend.onrender.com"); // Change to backend URL
 
-const App = () => {
+const VideoChat = () => {
   const [peerId, setPeerId] = useState(null);
   const [screenSharer, setScreenSharer] = useState(null);
   const myPeer = useRef(null);
@@ -90,4 +90,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default VideoChat;

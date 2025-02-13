@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
 
-const socket = io("https://conbeckend.onrender.com"); // Change to backend URL
+const socket = io("https://conbeckend.onrender.com");
 
 const VideoChat = () => {
   const [peerId, setPeerId] = useState(null);
@@ -13,32 +13,26 @@ const VideoChat = () => {
 
   useEffect(() => {
     myPeer.current = new Peer(undefined, {
-      host: "https://conbeckend.onrender.com",
+      host: "conbeckend.onrender.com", // ✅ Fix PeerJS Server URL
       path: "/peerjs",
-      secure: false,
+      secure: true,
     });
 
     myPeer.current.on("open", (id) => {
       setPeerId(id);
-    });
-
-    myPeer.current.on("call", (call) => {
-      call.answer();
-      call.on("stream", (stream) => {
-        if (screenVideoRef.current) {
-          screenVideoRef.current.srcObject = stream;
-        }
-      });
+      socket.emit("register", { peerId: id }); // ✅ Register user in backend
     });
 
     socket.on("screen-share-started", ({ peerId }) => {
       setScreenSharer(peerId);
-      const call = myPeer.current.call(peerId, null);
-      call.on("stream", (stream) => {
-        if (screenVideoRef.current) {
-          screenVideoRef.current.srcObject = stream;
-        }
-      });
+      if (peerId !== myPeer.current.id) {
+        const call = myPeer.current.call(peerId, null);
+        call.on("stream", (stream) => {
+          if (screenVideoRef.current) {
+            screenVideoRef.current.srcObject = stream;
+          }
+        });
+      }
     });
 
     socket.on("screen-share-stopped", () => {

@@ -1,87 +1,76 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
 
-const socket = io("https://conbeckend.onrender.com");
-
 const VideoChat = () => {
-  const [peerId, setPeerId] = useState(null);
-  const [screenSharer, setScreenSharer] = useState(null);
-  const myPeer = useRef(null);
-  const screenVideoRef = useRef(null);
-  const screenStreamRef = useRef(null);
+    const { roomId } = useParams(); 
+    const socket = useRef(io("http://localhost:4000"));
+    const peer = useRef(new Peer());
 
-  useEffect(() => {
-    myPeer.current = new Peer(undefined, {
-      host: "conbeckend.onrender.com", // ✅ Fix PeerJS Server URL
-      path: "/peerjs",
-      secure: true,
-    });
+    const videoRef = useRef();
+    const peers = useRef({});
+    const [users, setUsers] = useState([]);
 
-    myPeer.current.on("open", (id) => {
-      setPeerId(id);
-      socket.emit("register", { peerId: id }); // ✅ Register user in backend
-    });
+    useEffect(() => {
+        // Join room
+        socket.current.emit("join-room", roomId, peer.current.id);
 
-    socket.on("screen-share-started", ({ peerId }) => {
-      setScreenSharer(peerId);
-      if (peerId !== myPeer.current.id) {
-        const call = myPeer.current.call(peerId, null);
-        call.on("stream", (stream) => {
-          if (screenVideoRef.current) {
-            screenVideoRef.current.srcObject = stream;
-          }
+        peer.current.on("open", (id) => {
+            console.log("My Peer ID:", id);
         });
-      }
-    });
 
-    socket.on("screen-share-stopped", () => {
-      setScreenSharer(null);
-      if (screenVideoRef.current) {
-        screenVideoRef.current.srcObject = null;
-      }
-    });
-  }, []);
+        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+            .then((stream) => {
+                videoRef.current.srcObject = stream;
 
-  const startScreenShare = async () => {
-    try {
-      const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      screenStreamRef.current = screenStream;
-      socket.emit("start-screen-share", { peerId });
+                // Handle user connection
+                socket.current.on("user-connected", (userId) => {
+                    console.log(`User ${userId} joined`);
+                    connectToNewUser(userId, stream);
+                });
 
-      myPeer.current.on("call", (call) => {
-        call.answer(screenStream);
-      });
+                peer.current.on("call", (call) => {
+                    call.answer(stream);
+                    call.on("stream", (userStream) => {
+                        setUsers((prev) => [...prev, { id: call.peer, stream: userStream }]);
+                    });
+                });
 
-      screenStream.getVideoTracks()[0].onended = stopScreenShare;
-    } catch (error) {
-      console.error("Error sharing screen:", error);
-    }
-  };
+                socket.current.on("user-disconnected", (userId) => {
+                    console.log(`User ${userId} disconnected`);
+                    setUsers((prev) => prev.filter((user) => user.id !== userId));
+                    if (peers.current[userId]) {
+                        peers.current[userId].close();
+                    }
+                });
+            });
 
-  const stopScreenShare = () => {
-    if (screenStreamRef.current) {
-      screenStreamRef.current.getTracks().forEach((track) => track.stop());
-      screenStreamRef.current = null;
-    }
-    socket.emit("stop-screen-share");
-  };
+        return () => {
+            socket.current.disconnect();
+            peer.current.destroy();
+        };
+    }, [roomId]);
 
-  return (
-    <div className="flex flex-col items-center p-4">
-      <h1 className="text-lg font-bold mb-4">PeerJS Screen Sharing</h1>
-      {!screenSharer ? (
-        <button onClick={startScreenShare} className="bg-blue-500 text-white px-4 py-2 rounded-md">
-          Start Screen Share
-        </button>
-      ) : (
-        <button onClick={stopScreenShare} className="bg-red-500 text-white px-4 py-2 rounded-md">
-          Stop Screen Share
-        </button>
-      )}
-      <video ref={screenVideoRef} autoPlay playsInline className="border mt-4"></video>
-    </div>
-  );
+    const connectToNewUser = (userId, stream) => {
+        const call = peer.current.call(userId, stream);
+        call.on("stream", (userStream) => {
+            setUsers((prev) => [...prev, { id: userId, stream: userStream }]);
+        });
+        peers.current[userId] = call;
+    };
+
+    return (
+        <div>
+            <h2>Room ID: {roomId}</h2>
+            <video ref={videoRef} autoPlay muted height="200px" width="300px" />
+            {users.map((user) => (
+                <video key={user.id} autoPlay height="200px" width="300px" 
+                    ref={(el) => el && (el.srcObject = user.stream)} 
+                />
+            ))}
+        </div>
+    );
 };
 
 export default VideoChat;

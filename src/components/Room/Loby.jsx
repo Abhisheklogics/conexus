@@ -1,47 +1,78 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { v4 as uuidV4 } from "uuid";
 
-const socket = io('https://conbeckend.onrender.com', { autoConnect: false });
-
-const LobbyRoom = () => {
-    const [roomId, setRoomId] = useState('');
-    const [Name, setName] = useState('');
+const Lobby = () => {
+    const [roomCode, setRoomCode] = useState("");
+    const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const JoinRoom = () => {
-        if (!roomId.trim() || !Name.trim()) {
-            alert("Please enter both Room ID and Name!");
+    const createNewMeeting = () => {
+        const newRoomId = uuidV4(); // Generate unique room ID
+        navigate(`/room/${newRoomId}`); // Redirect to new meeting
+    };
+
+    const joinMeeting = async () => {
+        if (roomCode.trim() === "") {
+            setError("⚠️ Please enter a valid room code!");
             return;
         }
-        
-        socket.emit('join-room', { roomId, Name });
-        navigate(`/room/${roomId}`, { state: { roomId, userName: Name } });
+
+        try {
+            const response = await fetch(`http://localhost:4000/check-room/${roomCode}`);
+            const data = await response.json();
+
+            if (data.exists) {
+                navigate(`/room/${roomCode}`);
+            } else {
+                setError("⚠️ Room does not exist. Please enter a valid code.");
+            }
+        } catch (err) {
+            console.error("Error checking room:", err);
+            setError("⚠️ Unable to verify room. Try again.");
+        }
     };
 
     return (
-        <div className="lobby-container flex flex-col items-center justify-center min-h-screen bg-gray-800 text-white">
-            <div>
-                <input
-                    type="text"
-                    placeholder="Enter Room Code"
-                    value={roomId}
-                    onChange={(e) => setRoomId(e.target.value)}
-                    className="p-3 mb-4 text-black"
-                />
-                <input
-                    type="text"
-                    placeholder="Enter Name"
-                    value={Name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="p-3 mb-4 ml-10 text-black"
-                />
-                <button onClick={JoinRoom} className="p-3 ml-10 bg-green-500 rounded">
-                    Join Room
-                </button>
+        <div className="flex flex-col items-center justify-center h-screen bg-gray-900 text-white">
+            <h1 className="text-3xl font-bold mb-6">Google Meet Clone</h1>
+            
+            {/* New Meeting Button */}
+            <button 
+                className="bg-blue-500 px-6 py-3 rounded-lg text-white font-semibold mb-4 hover:bg-blue-600"
+                onClick={createNewMeeting}
+            >
+                New Meeting
+            </button>
+
+            <div className="flex flex-col items-center">
+                <div className="flex items-center space-x-2">
+                    {/* Input for Room Code */}
+                    <input 
+                        type="text"
+                        className="px-4 py-2 border rounded-lg text-black"
+                        placeholder="Enter meeting code"
+                        value={roomCode}
+                        onChange={(e) => {
+                            setRoomCode(e.target.value);
+                            setError(""); // Clear error on change
+                        }}
+                    />
+                    
+                    {/* Join Meeting Button */}
+                    <button 
+                        className="bg-green-500 px-4 py-2 rounded-lg text-white font-semibold hover:bg-green-600"
+                        onClick={joinMeeting}
+                    >
+                        Join
+                    </button>
+                </div>
+
+                {/* Error Message */}
+                {error && <p className="text-red-500 mt-2">{error}</p>}
             </div>
         </div>
     );
 };
 
-export default LobbyRoom;
+export default Lobby;

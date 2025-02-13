@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
 
+// ✅ Backend Socket.io URL (Render Server)
 const socket = io("https://conbeckend.onrender.com");
 
 const VideoChat = () => {
@@ -9,9 +10,16 @@ const VideoChat = () => {
   const [name, setName] = useState("");
   const [joined, setJoined] = useState(false);
   const [screenSharer, setScreenSharer] = useState(null);
-  
+
   const screenVideoRef = useRef(null);
-  const myPeer = useRef(new Peer());
+  const myPeer = useRef(
+    new Peer(undefined, {
+      host: "conbeckend.onrender.com", // ✅ Backend Host
+      secure: true, // ✅ Required for HTTPS
+      path: "/peerjs", // ✅ PeerJS Route
+    })
+  );
+
   const peers = useRef({});
   const screenStreamRef = useRef(null);
 
@@ -62,20 +70,6 @@ const VideoChat = () => {
       setScreenSharer(myPeer.current.id);
       socket.emit("screen-share", { roomId, userId: myPeer.current.id });
 
-      // Broadcast the screen stream to all users
-      myPeer.current.on("connection", (conn) => {
-        conn.on("data", (message) => {
-          if (message === "request-screen") {
-            const call = myPeer.current.call(conn.peer, screenStream);
-            call.on("stream", (remoteStream) => {
-              if (screenVideoRef.current) {
-                screenVideoRef.current.srcObject = remoteStream;
-              }
-            });
-          }
-        });
-      });
-
       if (screenVideoRef.current) {
         screenVideoRef.current.srcObject = screenStream;
       }
@@ -103,13 +97,6 @@ const VideoChat = () => {
       conn.on("open", () => {
         conn.send("request-screen");
       });
-
-      const call = myPeer.current.call(screenSharerId, null);
-      call.on("stream", (remoteStream) => {
-        if (screenVideoRef.current) {
-          screenVideoRef.current.srcObject = remoteStream;
-        }
-      });
     }
   };
 
@@ -119,7 +106,9 @@ const VideoChat = () => {
         <div className="flex flex-col items-center space-y-3">
           <input type="text" placeholder="Enter Room ID" value={roomId} onChange={(e) => setRoomId(e.target.value)} className="border p-2 rounded-md" />
           <input type="text" placeholder="Enter Name" value={name} onChange={(e) => setName(e.target.value)} className="border p-2 rounded-md" />
-          <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">Join Room</button>
+          <button onClick={joinRoom} className="bg-blue-500 text-white px-4 py-2 rounded-md">
+            Join Room
+          </button>
         </div>
       ) : (
         <div>

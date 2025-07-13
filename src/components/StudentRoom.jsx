@@ -66,9 +66,7 @@ export default function StudentRoom({ roomId, name }) {
         className="w-full max-w-2xl aspect-video rounded-xl bg-black shadow-lg object-cover"
       />
 
-      <div className="text-sm text-gray-300">
-        Waiting for teacher... (ensure camera permissions on teacher side)
-      </div>
+     
     </section>
   );
 }

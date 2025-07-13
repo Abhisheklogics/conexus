@@ -1,7 +1,7 @@
 import { io } from 'socket.io-client';
 
 export const makeSocket = ({ role, roomId, name }) =>
-  io('http://localhost:4000', {
+  io('https://meetbeckend.onrender.com', {
     transports: ['websocket'],
     auth: { role, roomId, name },   
   });

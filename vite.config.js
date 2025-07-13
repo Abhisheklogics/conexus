@@ -17,7 +17,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://conbeckend.onrender.com/',
+        target: 'https://meetbeckend.onrender.com',
         changeOrigin: true,
         secure: false,
       },

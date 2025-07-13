@@ -25,15 +25,7 @@ import VideoChat from './components/Room/Room.jsx'
 const router=createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App/>}>
-      <Route  path='' element={<Home/>}/>
-  <Route path='paper'  element={<SimpleSlider/>}/>
-      <Route path='contact'  element={<Contact/>}/>
-      <Route path='about'  element={<About/>}/>
-      <Route path='project'  element={<Project/>}/>
-      <Route  path='p1' element={<Project1/>}/>
-      <Route  path='p2' element={<Project2/>}/>
-      
-     
+      <Route  path='' element={<Home/>}/> 
       <Route path="room" element={<VideoChat/>} /> 
       <Route path="/room/:id" element={<Room />} />
     

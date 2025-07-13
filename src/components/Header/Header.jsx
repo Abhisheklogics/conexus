@@ -9,15 +9,18 @@ export default function Header() {
 
   return (
     <>
-          <div className="md:w-full md:h-12 mt-[-60px]  md:mt-0 w-fit md:opacity-40 md:text-white md:bg-gray-500 ">
+          <div className="2xl:w-full 2xl:h-12    2xl:w-fit 2xl:opacity-40 2xl:text-white 2xl:bg-gray-500
+          md:w-full md:h-12 mt-[-60px]   w-fit md:opacity-40 md:text-white md:bg-gray-500 ">
      
      </div>
      <ul className="absolute  ">
    
-         <li className="md:mt-[-40px] md:ml-6 md:text-white md:font-bold md:font-serif text-white mt-1 ml-4 text-2xl">Conexus</li>
+         <li className=" md:ml-6 md:text-white md:font-bold md:font-serif text-white mt-1 ml-4 text-2xl">Conexus</li>
     
        </ul>
-<div  style={{backgroundColor:'#222222'}} className=" flex gap-4 md:gap-6 bg-[#3E3E3E] p-2 rounded-lg md:h-[80px] md:p-0  w-fit  md:w-[640px] z-50   md:fixed  rounded-lg md:mt-[590px] md:left-[550px] md:block w-full flex justify-center items-center mt-16">
+<div  style={{backgroundColor:'#222222'}} className=" 
+  rounded-lg 2xl:mt-[590px] 2xl:left-[550px] 2xl:block 
+flex gap-4 md:gap-6 bg-[#3E3E3E] p-2 rounded-lg md:h-[80px] md:p-0  w-fit  md:w-[640px] z-50   md:fixed  rounded-lg md:mt-[500px] md:left-[400px] md:block w-full flex justify-center items-center mt-16">
 
 <ul style={{backgroundColor:'#3E3E3E'}} className=" overflow-x-scroll md:overflow-hidden md:w-[580px] gap-2 flex mt-10 p-2 md:flex md:h-[60px] md:left-10 md:mt-[2px] md:items-center md:gap-4 md:relative md:top-2 rounded-lg text-white     md:px-2">
 

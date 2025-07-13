@@ -1,21 +1,26 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import dotenv from 'dotenv'; // Import dotenv
+import dotenv from 'dotenv';
+import rollupNodePolyFill from 'rollup-plugin-node-polyfills';
 
-// Explicitly load environment variables from the .env file
-dotenv.config(); 
-
-// Access environment variable using process.env
-
+dotenv.config();
 
 export default defineConfig({
   plugins: [react()],
+ 
+  build: {
+    rollupOptions: {
+      plugins: [rollupNodePolyFill()],
+    },
+  },
   assetsInclude: ['**/*.PNG'],
   server: {
-    proxy: 'https://conbeckend.onrender.com/'
-     
-       
-     
-  
+    proxy: {
+      '/api': {
+        target: 'https://conbeckend.onrender.com/',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
 });

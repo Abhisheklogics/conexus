@@ -21,6 +21,7 @@ import Project2 from './components/Project2/Project2.jsx'
 import About from './components/About/About.jsx'
 import LobyRoom from './components/Room/Loby.jsx'
 import Room from './components/Room/Room.jsx'
+import VideoChat from './components/Room/Room.jsx'
 const router=createBrowserRouter(
   createRoutesFromElements(
     <Route path="/" element={<App/>}>
@@ -33,7 +34,7 @@ const router=createBrowserRouter(
       <Route  path='p2' element={<Project2/>}/>
       
      
-      <Route path="room" element={<LobyRoom/>} /> 
+      <Route path="room" element={<VideoChat/>} /> 
       <Route path="/room/:id" element={<Room />} />
     
 
